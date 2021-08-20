@@ -85,5 +85,5 @@ function monte_carlo_run(nb_runs, w0_fixed = Nothing)
 end
 
 #@btime monte_carlo_run(100000)
-monte_carlo_run(100000)
+#monte_carlo_run(100000)
 

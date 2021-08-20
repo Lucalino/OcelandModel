@@ -19,6 +19,13 @@ df_raw = CSV.read(datadir("sims", "om_eq_MonteCarlo_scan_100000_runs.csv"), Data
 #add derived quantities to dataframe
 df = derived_quantities!(df_raw)
 
+#O: Omega, m: moistening, d: drying
+O1dO2d = filter(row -> row.EminP1 < 0 && row.EminP2 < 0, df)
+O1dO2m = filter(row -> row.EminP1 < 0 && row.EminP2 > 0, df)
+O1mO2d = filter(row -> row.EminP1 > 0 && row.EminP2 < 0, df)
+O1mO2m = filter(row -> row.EminP1 > 0 && row.EminP2 > 0, df)
+
+
 nb_bins = 1000
 
 function eight_scatter_plots(df::DataFrame, nb_bins = nb_bins)
@@ -159,4 +166,23 @@ function state_variable_plot(df::DataFrame)
     hidespines!(ax6, :t, :r)
     fig[0, :] = Label(fig, "State variables, w0 < w_sat", textsize = 22)
     save(plotsdir("Open model", "State variable scatter plots", "state_variables_N=100000.png"), fig) 
+end
+
+function quadrant_split(x::String, y::String, xlabel::String, ylabel::String)
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    #scatter!(ax, O1dO2d[!,x], O1dO2d[!,y], color = :royalblue3, markersize = ms)
+    #scatter!(ax, O1dO2m[!,x], O1dO2m[!,y], color = :goldenrod2, markersize = ms)
+    #scatter!(ax, O1mO2d[!,x], O1mO2d[!,y], color = :green4, markersize = ms)
+    scatter!(ax, O1mO2m[!,x], O1mO2m[!,y], color = :red3, markersize = ms)
+    hlines!(ax, 0.0, linestyle = :dash, color = :gray22)
+    vlines!(ax, 0.0, linestyle = :dash, color = :gray22)
+    ax.xlabel = xlabel
+    ax.ylabel = ylabel
+    #xlims!(ax, -5, 5)
+    #ylims!(ax,-2, 3.2)
+    #axislegend(ax)
+    hidespines!(ax, :t, :r)
+    #return fig
+    save(plotsdir("Open model","Water vapour changes","$(x)_vs_$(y)_red_tracked.png"),fig)
 end

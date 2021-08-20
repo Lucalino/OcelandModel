@@ -18,6 +18,6 @@ end
 
 legend(leg)
 xlabel("relative soil saturation \$s\$",fontsize=fs)
-ylabel("\$E(s)\$/\$E_p\$",fontsize=fs)
+ylabel("\$land_evapo(s)\$/\$E_p\$",fontsize=fs)
 #title("Evapotranspiration Parametrization",fontsize=fs)
-text(0.0,0.95,"\$E(s)=E_p * s^c\$",fontsize=fs)
+text(0.0,0.95,"\$land_evapo(s)=E_p * s^c\$",fontsize=fs)

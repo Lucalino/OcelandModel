@@ -148,7 +148,7 @@ function rand_params(w0)
     if w0 == Nothing
         w0 = rand(Uniform(0.0, w_sat)) #advection at outer model boundary [mm]
     end
-    L   = km2mm(500) #length of full model box [mm]
+    L   = km2mm(10000) #length of full model box [mm]
     Li  = km2mm(rand(Uniform(50.0, 300.0))) #length island [mm]
     Lo1 = L/2 - Li/2 #length ocean 1 [mm] - symmetric configuration
     Lo2 = L - Li - Lo1

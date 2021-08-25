@@ -228,19 +228,19 @@ elseif constraint == "Ptot"
             ax.plot(s[ll:ul],dPR_r[ll:ul]; label=L"\partial PR/\partial r",lw)
             ax.plot(s[ll:ul],dPR_ϵ[ll:ul]; label=L"\partial PR/\partial ϵ",lw)
             ax.plot(s[ll:ul],dPR_Ptot[ll:ul]; label=L"\partial PR/\partial P_{tot}",lw)
-            ax.plot(s[ll:ul],dPR_s[ll:ul]; label=L"\partial PR/\partial s",lw)
+            #ax.plot(s[ll:ul],dPR_s[ll:ul]; label=L"\partial PR/\partial s",lw)
             ax.plot(s[ll:ul],dPR_sfc[ll:ul]; label=L"\partial PR/\partial s_{fc}",lw)
             ax.plot(s[ll:ul],dPR_α[ll:ul]; label=L"\partial PR/\partial α",lw, color="tab:cyan")
             axhline(0.0; linestyle="dotted", color= "grey")
-            ax.set_xlabel("relative soil moisture saturation \$s\$",fontsize=fs)
-            ax.set_ylabel("partial derivative of \$P_l/P_o\$",fontsize=fs)
-            ax.legend(fontsize=fs, frameon=false)
+            ax.set_xlabel("Relative soil moisture saturation \$s\$",fontsize=fs)
+            ax.set_ylabel("Partial derivative of \$P_l/P_o\$",fontsize=fs)
+            ax.legend(fontsize=fs, frameon=false, loc="upper left")
             ax.spines["right"].set_visible(false)
             ax.spines["top"].set_visible(false)
             ax.set_xlim([0.18,0.55])
-            ax.set_ylim([-6.0,12.5])
+            ax.set_ylim([-6.0,6.0])
             ax.tick_params(labelsize=14)
-            savefig(plotsdir("Closed Model/Sensitivity/Ptot fixed/Sens_lev2_Ptot_0.18-0.55_panel_report.png"))
+            #savefig(plotsdir("Closed Model/Sensitivity/Ptot fixed/Sens_lev2_Ptot_0.18-0.55_panel_report_v2.png"))
 
         elseif calcmode == "abs"
             #Level 2: Calculation of additional terms based on the derivatives of PR wrt El and Φ from level 1
@@ -283,6 +283,7 @@ elseif constraint == "Ptot"
             axhline(0.0; linestyle="dotted", color= "grey")
             xlabel("relative soil moisture saturation \$s\$",fontsize=fs)
             ylabel("abs. partial derivative of \$|P_l/P_o|\$",fontsize=fs)
+            xlim()
             legend(fontsize=fs)
             #ax = f.get_axes()[1]
             #ax.spines["top"].set_visible(false)

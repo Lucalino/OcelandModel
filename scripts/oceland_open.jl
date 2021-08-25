@@ -16,7 +16,7 @@ using DrWatson
 #pygui(true)
 using DifferentialEquations
 using IntervalRootFinding
-using IntervalArithmetic
+using IntervalArithmetic#
 using StaticArrays
 using Random
 using Distributions
@@ -81,7 +81,7 @@ function monte_carlo_run(nb_runs, w0_fixed = Nothing)
     end
 
     sol_df = DataFrame(sol, col_names)
-    CSV.write(datadir("sims", "om_eq_MonteCarlo_scan_$(nb_runs)_runs.csv"), sol_df)
+    CSV.write(datadir("sims", "om_eq_MonteCarlo_scan_$(nb_runs)_runs_domain10000.csv"), sol_df)
 end
 
 #@btime monte_carlo_run(100000)

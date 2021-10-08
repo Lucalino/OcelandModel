@@ -41,6 +41,18 @@ function land_evap(s::Number, spwp::Number,sfc::Number,Ep::Number)
 
 end
 
+function land_evap_dry()
+    return 0.0
+end
+
+function land_evap_trans(s::Number, spwp::Number,sfc::Number,Ep::Number)
+    return Ep/(sfc-spwp)*(s-spwp)
+end
+
+function land_evap_wet(Ep::Number)
+    return Ep
+end
+
 
 """
     land_evap_diff(s::Number, spwp::Number,sfc::Number,Ep::Number)
@@ -113,6 +125,15 @@ Defined by Bretherton et al. (2004), DOI:10.1175/1520-0442(2004)017<1517:RBWVPA>
 """
 function precip(w::Number,w_sat::Number,a::Number,b::Number)
     return exp(a*(w / w_sat - b))
+end
+
+function precip_dry()
+    return 0.0
+end
+
+#the precip_trans function needs more research
+function precip_trans(w::Number,w_crit::Number,w_sat::Number,a::Number,b::Number)
+    return exp(a*((w - w_crit) / w_sat - b))
 end
 
 """

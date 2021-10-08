@@ -7,14 +7,14 @@ using Statistics
 using Colors
 include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
-include(srcdir("analysis.jl"))
+include(srcdir("om_analysis.jl"))
 
 fs= 14.0 #fontsize
 lw= 2.0  #linewidth
 ms= 5.0  #markersize
 
 #read in raw solution data (parameters and solutions)
-df_raw = CSV.read(datadir("sims", "om_eq_MonteCarlo_scan_100000_runs.csv"), DataFrame)
+df_raw = CSV.read(datadir("sims", "om_eq_MonteCarlo_scan_100000_runs_domain10000.csv"), DataFrame)
 
 #add derived quantities to dataframe
 df = derived_quantities!(df_raw)
@@ -30,8 +30,8 @@ nb_bins = 1000
 
 function eight_scatter_plots(df::DataFrame, nb_bins = nb_bins)
     x = ["spwp", "sfc", "ϵ", "r", "w0", "Li", "u", "w_sat"]
-    y = ["P1", "P2", "P3", "El", "infilt", "runoff", "PR"]
-    y_units = [" [mm/day]", " [mm/day]", " [mm/day]", " mm/day", "", " [mm/day]", ""]
+    y = ["PR"] #["P1", "P2", "P3", "El", "infilt", "runoff", "PR"]
+    y_units = [""] #[" [mm/day]", " [mm/day]", " [mm/day]", " mm/day", "", " [mm/day]", ""]
     x_units = ["", "", "", "", " [mm]", " [km]", " [m/s]", " [mm]"]
 
     for i = 1:length(y)
@@ -76,7 +76,8 @@ function eight_scatter_plots(df::DataFrame, nb_bins = nb_bins)
         ax4.xlabel = string(x[4], x_units[4])
         ax5.xlabel = string(x[5], x_units[5])
         ax5.ylabel = string(y[i],y_units[i])
-        ax6.xlabel = string(x[6], x_units[6])
+        #ax6.xlabel = string(x[6], x_units[6])
+        ax6.xlabel = string("L_2", x_units[6])
         ax7.xlabel = string(x[7], x_units[7])
         ax7.ylabel = string(y[i],y_units[i])
         ax8.xlabel = string(x[8], x_units[8])
@@ -90,9 +91,9 @@ function eight_scatter_plots(df::DataFrame, nb_bins = nb_bins)
         hidespines!(ax7, :t, :r)
         hidespines!(ax8, :t, :r)
 
-        supertitle = fig[0, :] = Label(fig, "w0 < w_sat", textsize = 22)
+        #supertitle = fig[0, :] = Label(fig, "w0 < w_sat", textsize = 22)
 
-        save(plotsdir("Open model","Parameter scatter plots","100000_$(y[i])_params_scatter.png"),fig)
+        save(plotsdir("Open model","Parameter scatter plots","runs100000_$(y[i])_params_scatter_domain10000_panel.png"),fig)
         #return fig
     end
 end

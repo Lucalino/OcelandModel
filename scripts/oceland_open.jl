@@ -76,7 +76,7 @@ function monte_carlo_run(nb_runs, w0_fixed = Nothing)
     sol = Array{Float64}(undef, 0, output_columns)
 
     for i=1:nb_runs
-        params = rand_params(w0_fixed)
+        params = om_rand_params(w0_fixed)
         sol = [sol; om_eq_solution(f_one, f_two, f_three, params, output_columns)]
     end
 

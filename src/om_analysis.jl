@@ -1,3 +1,21 @@
+function cm_eq_solution()
+
+
+function cm_rand_params()
+    spwp = rand(Uniform(0.20, 0.54)) #permanent wilting point, NEEDS SOME MORE RESEARCH!
+    sfc = spwp + 0.3  #field capacity
+    ep = 4.38  #[mm/day] potential evaporation over land in mm/day, taken from [1]
+    eo = 3.0   #[mm/day] ocean evaporation rate
+    ϵ = 1.0    #numerical parameter from Rodriguez-Iturbe et al. (1991)
+    r = 2.0    #numerical parameter from Rodriguez-Iturbe et al. (1991)
+    α = 0.2    #land fraction
+    nZr = 100.0  #[mm] reservoir depth/"field storage capacity of the soil" [mm]
+    a = 15.6   #numerical parameter from Bretherton et al. (2004)
+    b = 0.603  #numerical parameter from Bretherton et al. (2004)
+    wsat = 72.0  #[mm] saturation water vapour pass derived from plots in Bretherton et al. ( 2004)
+    u = 5.0 * m2mm(1)/s2day(1) #[mm/day] wind speed
+    L = 1000 * km2mm(1) #[mm] domain size
+
 """
     derived_quantities!(df::DataFrame)
 
@@ -136,7 +154,7 @@ Create random combinations of parameter values for {spwp, sfc, Ep, eo, ϵ, r, nZ
 Return dictionary of parameter names and values. Note that some parameter values are fixed and some are computed from
 other randomised parameters.
 """
-function rand_params(w0)
+function om_rand_params(w0)
     spwp = rand(Uniform(0.35, 0.55)) #permanent wilting point
     sfc = rand(Uniform(spwp, 0.75))  #field capacity > pwp #NEEDS MORE RESEARCH
     Ep = 4.38  #potential evaporation over land [mm/day], taken from [1]

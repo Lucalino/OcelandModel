@@ -16,7 +16,7 @@ using DrWatson
 #pygui(true)
 using DifferentialEquations
 using IntervalRootFinding
-using IntervalArithmetic#
+using IntervalArithmetic
 using StaticArrays
 using Random
 using Distributions
@@ -25,7 +25,7 @@ using BenchmarkTools
 using CSV
 include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
-include(srcdir("analysis.jl"))
+include(srcdir("om_analysis.jl"))
 
 
 ##### EQUILIBRIUM SYSTEM ######

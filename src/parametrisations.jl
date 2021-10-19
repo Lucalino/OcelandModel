@@ -53,6 +53,18 @@ function land_evap_wet(Ep::Number)
     return Ep
 end
 
+"""
+    function evap_tanh(x, p::Dict{Symbol, Real})
+
+Smooth parametrisation of land evapotranspiration that takes three parameters
+A = Ep/2, B = tuning_parameter and C = (spwp + sfc)/2 in the form of a dictionary.
+
+"""
+function evap_tanh(s, spwp, sfc, ep, pt)
+    return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
+end
+
+
 
 """
     land_evap_diff(s::Number, spwp::Number,sfc::Number,Ep::Number)
@@ -127,8 +139,24 @@ function precip(w::Number,w_sat::Number,a::Number,b::Number)
     return exp(a*(w / w_sat - b))
 end
 
-function precip_dry()
-    return 0.0
+
+"""
+    precip_pw()
+
+Computes precipitation as a function of water vapour pass but defined piece-wise (pw) such that 
+the precipitation is zero below some critical value w_crit.
+
+"""
+function precip_pw(w::Number, p)
+
+    @unpack w_crit, a, b, w_sat = p
+
+    if w < w_crit
+        return 0.0
+
+    else
+        return exp(a*((w - w_crit) / w_sat - b))
+    end
 end
 
 #the precip_trans function needs more research

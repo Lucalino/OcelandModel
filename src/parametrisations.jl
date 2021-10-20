@@ -20,26 +20,42 @@ using Base: Number
 # Ep: potential evapotranspiration
 
 """
-    land_evapo(spwp::Number,sfc::Number,Ep::Number,s::Number)
+    land_evapo(s::Float64, p::Dict{::Symbol, ::Float64})
 
 Compute the evaporation rate of a land domain.
 
 Input parameters are relative soil moisture saturation s and its values for the permanent wilting point, spwp, and field capacity, sfc,
 and potential evaporation, Ep. 
 """
-function land_evap(s::Number, spwp::Number,sfc::Number,Ep::Number)     
+function land_evap(s, p::Dict{Symbol, Float64})     
+    @unpack spwp, sfc, ep = p
 
     if s < spwp
         return 0.0
 
     elseif s > sfc
-        return Ep
+        return ep
 
     else
-        return Ep/(sfc-spwp)*(s-spwp)
+        return ep/(sfc-spwp)*(s-spwp)
     end
 
 end
+# function land_evap(s::Float64, p::Dict)     
+#     @unpack spwp, sfc, ep = p
+
+#     if s < spwp
+#         return 0.0
+
+#     elseif s > sfc
+#         return ep
+
+#     else
+#         return ep/(sfc-spwp)*(s-spwp)
+#     end
+
+# end
+
 
 function land_evap_dry()
     return 0.0
@@ -53,6 +69,7 @@ function land_evap_wet(Ep::Number)
     return Ep
 end
 
+
 """
     function evap_tanh(x, p::Dict{Symbol, Real})
 
@@ -60,9 +77,14 @@ Smooth parametrisation of land evapotranspiration that takes three parameters
 A = Ep/2, B = tuning_parameter and C = (spwp + sfc)/2 in the form of a dictionary.
 
 """
-function evap_tanh(s, spwp, sfc, ep, pt)
+function evap_tanh(s, p::Dict)
+    @unpack spwp, sfc, ep, pt = p
     return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
 end
+# function evap_tanh(s, spwp, sfc, ep, pt)
+#     return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
+# end
+
 
 
 
@@ -94,7 +116,7 @@ end
 # The subtracted fraction of P_l described by ϵ, r and s constitutes the runoff.
 
 """
-    infiltration(ϵ::Number,r::Number,s::Number)
+    infiltration(ϵ::Float64, ϵ::Float64, r::Float64)
 
 Compute the fraction of precipitation that infiltrates the soil. 
 
@@ -104,12 +126,19 @@ To obtain the absolute infiltration amount, the result needs to be multiplied by
 
 Defined e.g. in Rodriguez‐Iturbe et al. (1991), DOI: 10.1029/91WR01035
 """
-function infiltration(s::Number, ϵ::Number, r::Number)
+function infiltration(s, p::Dict)
+    @unpack ϵ, r = p
     return 1 - ϵ*s^r
 end
+# function infiltration(s::Float64, ϵ::Float64, r::Float64)
+#     return 1 - ϵ*s^r
+# end
+
+
+
 
 """
-    infiltration_diff(ϵ::Number,r::Number,s::Number)
+    infiltration_diff(s::Float64, ϵ::Float64, r::Float64)
 
 Compute the derivative of the fraction of precipitation that infiltrates the soil with respect to s. 
 
@@ -117,7 +146,7 @@ Take numerical parameters ϵ, r and relative soil moisture saturation s as input
 
 Infiltration defined e.g. in Rodriguez‐Iturbe et al. (1991), DOI: 10.1029/91WR01035
 """
-function infiltration_diff(s::Number, ϵ::Number, r::Number)
+function infiltration_diff(s::Float64, ϵ::Float64, r::Float64)
     return - r * ϵ * s^(r-1)
 end
 
@@ -127,7 +156,7 @@ end
 # Exponential function with 
 
 """
-    precip(w::Number,w_sat::Number=72.,a::Number=15.6,b::Number=0.603)
+    precip(w::Float64,w_sat::Float64,a::Float64,b::Float64)
 
 Computes the precipitation rate from input arguments water vapour pass, w, 
 saturation water vapour pass, w_sat, and two numerical parameters, a and b.
@@ -135,19 +164,24 @@ saturation water vapour pass, w_sat, and two numerical parameters, a and b.
 Defined by Bretherton et al. (2004), DOI:10.1175/1520-0442(2004)017<1517:RBWVPA>2.0.CO;2
 
 """
-function precip(w::Number,w_sat::Number,a::Number,b::Number)
-    return exp(a*(w / w_sat - b))
+function precip(w,p::Dict)
+    @unpack wsat, a, b = p
+    return exp(a*(w / wsat - b))
 end
+
+# function precip(w::Float64,w_sat::Float64,a::Float64,b::Float64)
+#     return exp(a*(w / w_sat - b))
+# end
 
 
 """
-    precip_pw()
+    precip_pw(w::Float64, p::Dict)    
 
 Computes precipitation as a function of water vapour pass but defined piece-wise (pw) such that 
 the precipitation is zero below some critical value w_crit.
 
 """
-function precip_pw(w::Number, p)
+function precip_pw(w::Float64, p::Dict)
 
     @unpack w_crit, a, b, w_sat = p
 

@@ -1,11 +1,20 @@
 using DrWatson
 @quickactivate "Oceland Model"
+
+using CairoMakie
+using GLMakie
+#using Colors
+#using Random
+using DataFrames
+#using Distributions
+using DifferentialEquations
+using DynamicalSystems
+using InteractiveDynamics
 include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
-using CairoMakie
-using Colors
-using Random
-using Distributions
+include(srcdir("model_versions.jl"))
+include(srcdir("cm_analysis.jl"))
+
 
 fs= 20.0 #fontsize
 lw= 2.0  #linewidth
@@ -76,3 +85,48 @@ function evap_tanh_plot(mode::String)
 
     return fig
 end
+
+
+
+function diffeq_issue()
+    #x0 = [0.3, 50.0, 40.0]
+    x0 = [0.3, 0.5, 0.4]
+    #p = [2.0, 70.0, 4.0e8]
+    p = Dict(
+        :a => 2.0,
+        :b => 70.0,
+        :c => 4.0e8,
+    )
+
+    function my_system(x, p, t)
+        @unpack a, b, c = p
+        dx = exp(x[2] - 0.5) * (1.0 - x[1]) - a * tanh(10.0 * (x[1] - 0.5)) - a
+        dy = a * tanh(10.0 * (x[1] - 0.5)) + a - exp(x[2] - 0.5) + (x[3] - x[2]) * 2.0
+        dz = 3.0 - exp(x[3] - 0.5) - (x[3] - x[2]) * 0.5
+        # dx = (15.0 * (exp(x[2]/b - 0.6)) * (1.0 - x[1]^2) - a * tanh(10.0 * (x[1] - 0.5)) - a)/100.0
+        # dy = a * tanh(10.0 * (x[1] - 0.5)) + a - exp(15.0 * (x[2]/b - 0.6)) + (x[3] - x[2]) * 2.0
+        # dz = 3.0 - exp(15.0 * (x[3]/b - 0.6)) - (x[3] - x[2]) * 0.5
+        return SVector(dx, dy, dz)
+    end
+
+    #p_fixed = cm_fixed_params()
+    ds = ContinuousDynamicalSystem(my_system, x0, p)
+    u0s =  [ds.u0]
+    diffeq = (alg = Rodas5(), adaptive = false, dt = 0.001, reltol = 1e-8, abstol = 1e-8)
+    tr = trajectory(ds, 100; diffeq...)
+    ps = Dict(
+        :a => 1.9:0.01:2.1
+        #:spwp  => 0.2:0.01:0.54,   
+        #:eo => 2.5:0.1:3.5,
+    )
+
+    fig, obs = interactive_evolution_timeseries(
+        ds, u0s, ps; tail = 100000, diffeq, idxs = (1, 2, 3), 
+        lims =((0.0,1.0), (0.0, 2.0), (0.0, 2.0))
+    )
+    #prob = ODEProblem(my_system, x0, tspan, p)
+    #sol = solve(prob, alg = Rodas5(), reltol=1e-9, abstol=1e-9, saveat=1.0)
+    return fig
+end
+
+td = cm_rand_params()

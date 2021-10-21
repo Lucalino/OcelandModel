@@ -29,26 +29,22 @@ include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("cm_analysis.jl"))
 include(srcdir("model_versions.jl"))
+include(srcdir("cm_plotting.jl"))
 
-
-fs=14.0
-lw=2.0
 
 # Model versions:
 # 1  : soil moisture ODE without parametrised precipitation but given advection Pa
 # 2  : system solved with NLsolve.jl as Monte-Carlo runs. Precipitaiton is parametrised, E_l is piecewise defined
 # 3  : set of ODEs for the three state variables s, wl, wo. Precipitation is parametrised, E_l is piecewise defined
-# 4  : system solved with DynamicalSystems.jl package and piecewise defined E_l
-# 5  : system solved with DynamicalSystems.jl package and tanh-version of E_l
-# 6  : system solved with IntervalRootFinding.jl. Precipitation parametrised, E_l piecewise defined
+# 4  : system solved with DynamicalSystems.jl package with smooth OR piecewise defined E_l
+# 5  : system solved with IntervalRootFinding.jl. Precipitation parametrised, E_l piecewise defined
 
-calc_mode = 6
-
-params = cm_rand_params()
+calc_mode = 3
 
 
 if calc_mode == 1
 
+    fs= 14.0 #fontsize
     fig = Figure()
     ax  = Axis(fig[1,1], xlabel = L"time $t$ [days]", ylabel = L"soil moisture saturation $s$")
 
@@ -97,47 +93,49 @@ elseif calc_mode == 2
 
     # Defining the system of equations
 
+    p = cm_rand_params()
+
     function f!(F, x, p)
 
-        @unpack eo, α, nZr, u, L = params
+        @unpack eo, α, nZr, u, L = p
 
         #Variable naming: x[1] = s, x[2] = wl, x[3] = wo
-        F[1] = 1/(nZr) * (precip(x[2], params) * infiltration(x[1], params) - land_evap(x[1], params))
-        F[2] = land_evap(x[1], params) - precip(x[2], params) + (x[3] - x[2]) * u / (α*L)
-        F[3] = eo - precip(x[3], params) - (x[3] - x[2]) * u / ((1-α) * L)
+        F[1] = 1/(nZr) * (precip(x[2], p) * infiltration(x[1], p) - land_evap(x[1], p))
+        F[2] = land_evap(x[1], p) - precip(x[2], p) + (x[3] - x[2]) * u / (α*L)
+        F[3] = eo - precip(x[3], p) - (x[3] - x[2]) * u / ((1-α) * L)
     end
 
 
-    function cm_monte_carlo_run(nb_runs)
+    function cm_MC_nlsolve(nb_runs)
 
-        param_names = keys(params)
-        col_names = [string(el) for el in param_names]
+        p_names = keys(p)
+        col_names = [string(el) for el in p_names]
         col_names = append!(col_names, ["s", "wl", "wo", "convergence"])
         output_columns = length(col_names)
 
         #initialising output matrix
         sol = Array{Float64}(undef, 0, output_columns)
+        x0 = [0.5, 50.0, 50.0]
     
-        for i=1:nb_runs
-            init_cond = [0.5, 50.0, 50.0]
-            sol = [sol; cm_eq_solution(f!, init_cond)]
+        for i=1:nb_runs            
+            sol = [sol; cm_eq_nlsolve(f!, x0)]
         end
     
         sol_df = DataFrame(sol, col_names)
-        #CSV.write(datadir("sims", "cm_eq_MonteCarlo_scan_$(nb_runs)_runs.csv"), sol_df)
+        #CSV.write(datadir("sims", "closed model pmscan", "cm_piecewise_eq_MC_nlsolve_$(nb_runs)_runs.csv"), sol_df)
         println(sol_df)
     end
 
-    cm_monte_carlo_run(5)
+    cm_MC_nlsolve(5)
     
-
-
 
 elseif calc_mode == 3
 
+    p = cm_rand_params()
+
     tspan = (0.0, 100.0)
-    x0 = [0.6, 30.0, 60.0]
-    prob = ODEProblem(closed_model_pw, x0, tspan, params)
+    x0 = [0.3, 40.0, 50.0]
+    prob = ODEProblem(closed_model_pw, x0, tspan, p)
     sol = solve(prob)
 
     st  = sol.u[1][1]
@@ -155,24 +153,37 @@ elseif calc_mode == 3
 
 elseif calc_mode == 4
 
-    x0 = @SVector [0.3, 40.0, 60.0] 
-    dynsys = ContinuousDynamicalSystem(closed_model_piecewise, x0, params)
-    box = cm_state_space(params)
-    fp, eigs, stable = fixedpoints(dynsys, box)
+    function cm_MC_fixedpoints(nb_runs, system)
 
-elseif calc_mode == 5
+        col_names = [string(el) for el in keys(cm_rand_params())]
+        col_names = append!(col_names, ["s", "wl", "wo"])
+        sol = Array{Float64}(undef, 0, length(col_names))
+        x0 = @SVector [0.5, 50.0, 50.0]
 
-    x0 = @SVector [0.3, 60.0, 50.0] 
-    dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, params)
-    box = cm_state_space(params)
-    fp, eigs, stable = fixedpoints(dynsys, box)
-    # tspan = (0.0,100.0)
-    # prob = ODEProblem(closed_model_smooth, x0, tspan, params)
-    # solve(prob, reltol=1e-8)
-    #@benchmark solve(prob,Vern9(), save_every_step = false)    
+        for n = 1:nb_runs
+            sol = [sol; cm_eq_fixedpoints(system, x0)]
+        end
+
+        sol_df = DataFrame(sol, col_names)
+        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_eq_MC_fixedpoints_$(nb_runs)_runs.csv"), sol_df)
+        #println(sol_df)
+
+    end
+
+    cm_MC_fixedpoints(100000, "smooth")
+
+    # p = cm_rand_params()
+    # x0 = @SVector [0.5, 50.0, 50.0]
+    # dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, p)
+    # diffeq = (alg = Vern9(), adaptive = false, dt = 0.001, reltol = 1e-8, abstol = 1e-8)
+    # sg  = range(0.2, 0.8; length = 101)
+    # wlg = wog = range(30.0, 60.0; length = 101)
+    # basins, attractors = basins_of_attraction((sg, wlg, wog), dynsys)
+
     #@btime closed_model_smooth($(x0), $params, 0.0)  
+
     
-elseif calc_mode == 6
+elseif calc_mode == 5
 
     closure_pw = x -> closed_model_piecewise(x, params, 0.0)
     box = cm_state_space(params)

@@ -9,10 +9,29 @@ in a DataFrame and return them as new columns of the input DataFrame.
 The input dataframe also needs to contain values for the relevant parameter.
 """
 function derived_quantities!(df::DataFrame)
-    df.Pl = precip.(df.wl, df.wsat, df.a, df.b)
-    df.Po = precip.(df.wo, df.wsat, df.a, df.b)
-    df.El = land_evap.(df.s, df.spwp, df.sfc, df.ep)
-    df.infilt = infiltration.(df.s, df.ϵ, df.r)
+
+    d = Dict{Symbol, Float64}(
+        :spwp => df.spwp, 
+        :sfc  => df.sfc,
+        :ep   => df.ep,    
+        :eo   => df.eo,     
+        :ϵ    => df.ϵ,     
+        :r    => df.r, 
+        :α    => df.α,
+        :nZr  => df.nZr,
+        :a    => df.a,
+        :b    => df.b,
+        :wsat => df.wsat,
+        :u    => df.u,
+        :L    => df.L,
+        :pt   => df.pt,
+    )
+
+    df.Pl = precip.(df.wl, d)
+    df.Po = precip.(df.wo, d)
+    #df.El = land_evap.(df.s, d)
+    df.El = evap_tanh(df.s, d)
+    df.infilt = infiltration.(df.s, d)
     df.runoff = (1 .- df.infilt) .* df.P2
     df.PR = df.P2 .* (df.Lo1 + df.Lo2) ./ (df.Lo1 .* df.P1 + df.Lo2 .* df.P3)
     df.EminP1 = df.eo - df.P1
@@ -30,11 +49,11 @@ end
 
 
 
-function cm_eq_solution(system, initial_conditions)
+function cm_eq_nlsolve(x0)
 
     p = cm_rand_params()    
     system = (F, x) -> f!(F, x, p)    
-    solution = nlsolve(system, initial_conditions)    
+    solution = nlsolve(system, x0)    
     sol_vec = transpose(solution.zero)
     p_vals = transpose(collect(values(p)))
     
@@ -47,6 +66,37 @@ function cm_eq_solution(system, initial_conditions)
     sol_row = [p_vals sol_vec convergence]
 
     return sol_row
+end
+
+function cm_eq_fixedpoints(system, x0)
+    p = cm_rand_params() 
+
+    if system == "smooth"
+        dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, p)
+    elseif system == "piecewise"
+        dynsys = ContinuousDynamicalSystem(closed_model_piecewise, x0, p)
+    else
+        println("Specification of ODE system missing (smooth or piecewise).")
+    end
+
+    box = cm_state_space(p)
+    fp, eigs, stable = fixedpoints(dynsys, box)
+    p_vals = transpose(collect(values(p)))
+
+    if stable == [0]
+        println("Unstable fixed point for parameteres ", col_names, "=", p_vals, "!")
+    end
+
+    fpm = Matrix(fp)
+
+    if size(fpm, 1) == 0 
+        println("No fixed point for parameters ", col_names, "=", p_vals, "!")
+    elseif size(fpm, 1) > 1
+        println("More than one fixed point for ", col_names, "=", p_vals, "!")
+    else
+        solrow = [p_vals transpose(fpm[1,:])]
+    end
+    return solrow
 end
 
 
@@ -86,24 +136,7 @@ end
 
 
 
-function cm_t_evolution_plot(s, wl, wo, t)
-    fig = Figure()
-    ax1 = Axis(fig[1,1])
-    ax2 = Axis(fig[2,1])
-    ax2.xlabel = "time [s]"
-    ax1.ylabel = "water vapour pass [mm]"
-    ax2.ylabel = "relative soil moisture"
-    ax2.ylabelsize = fs
-    ax2.xlabelsize = fs
-    ax2.ylabelsize = fs
-    hidespines!(ax1, :t, :r)
-    hidespines!(ax2, :t, :r)
-    lines!(ax1, t, wl, label="w_l", color="dodgerblue")
-    lines!(ax1, t, wo, label="w_o", color="darkblue")
-    lines!(ax2, t, s, color="darkgreen")
-    axislegend(ax1, framevisible = false)
-    return fig
-end
+
 
 
 function cm_rand_params()
@@ -113,7 +146,7 @@ function cm_rand_params()
         :ep   => rand(Uniform(4.1, 4.5)),     #[mm/day] potential evaporation over land in mm/day, taken from [1]
         :eo   => rand(Uniform(2.8, 3.2)),     #[mm/day] ocean evaporation rate
         :ϵ    => rand(Uniform(0.9, 1.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
-        :r    => rand(Uniform(1.9, 2.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
+        :r    => 2.0, #rand(Uniform(1.9, 2.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
         :α    => rand(Uniform(0.1, 0.7)),       #land fraction
         :nZr  => rand(Uniform(90.0, 110.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
         :a    => rand(Uniform(11.4, 15.6)),    #numerical parameter from Bretherton et al. (2004)

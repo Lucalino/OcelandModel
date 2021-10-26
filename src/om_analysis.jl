@@ -6,7 +6,7 @@ in a DataFrame and return them as new columns of the input DataFrame.
 The input dataframe also needs to contain values for the relevant parameter.
 """
 function derived_quantities!(df::DataFrame)
-    
+        
     df.P1 = precip.(df.w1, df.w_sat, df.a, df.b)
     df.P2 = precip.(df.w2, df.w_sat, df.a, df.b)
     df.P3 = precip.(df.w3, df.w_sat, df.a, df.b)

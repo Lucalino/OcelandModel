@@ -39,7 +39,7 @@ include(srcdir("cm_plotting.jl"))
 # 4  : system solved with DynamicalSystems.jl package with smooth OR piecewise defined E_l
 # 5  : system solved with IntervalRootFinding.jl. Precipitation parametrised, E_l piecewise defined
 
-calc_mode = 3
+calc_mode = 40
 
 
 if calc_mode == 1
@@ -126,15 +126,15 @@ elseif calc_mode == 2
         println(sol_df)
     end
 
-    cm_MC_nlsolve(5)
+    #cm_MC_nlsolve(5)
     
 
 elseif calc_mode == 3
 
-    p = cm_rand_params()
+    p = cm_fixed_params(1)
 
     tspan = (0.0, 100.0)
-    x0 = [0.3, 40.0, 50.0]
+    x0 = [0.3, 60.0, 40.0]
     prob = ODEProblem(closed_model_pw, x0, tspan, p)
     sol = solve(prob)
 
@@ -165,20 +165,21 @@ elseif calc_mode == 4
         end
 
         sol_df = DataFrame(sol, col_names)
-        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_eq_MC_fixedpoints_$(nb_runs)_runs.csv"), sol_df)
+        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_eq_MC_fixedpoints_$(nb_runs)_runs_domain10000.csv"), sol_df)
         #println(sol_df)
 
     end
 
-    cm_MC_fixedpoints(100000, "smooth")
+    cm_MC_fixedpoints(10000, "smooth")
 
     # p = cm_rand_params()
-    # x0 = @SVector [0.5, 50.0, 50.0]
+    # x0 = @SVector [0.6, 40.0, 40.0]
     # dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, p)
     # diffeq = (alg = Vern9(), adaptive = false, dt = 0.001, reltol = 1e-8, abstol = 1e-8)
-    # sg  = range(0.2, 0.8; length = 101)
-    # wlg = wog = range(30.0, 60.0; length = 101)
+    # sg  = range(0.0, 1.0; length = 100)
+    # wlg = wog = range(0.0, p[:wsat]; length = 100)
     # basins, attractors = basins_of_attraction((sg, wlg, wog), dynsys)
+    #fig = cm_basins_plot(basins[1,:,:], wlg, wog)
 
     #@btime closed_model_smooth($(x0), $params, 0.0)  
 
@@ -191,5 +192,5 @@ elseif calc_mode == 5
     println(rts)
 
 else
-    println("Specify which version of model formulation you want to work with")
+    println("Specify a valid version of the model formulation that you want to work with!")
 end

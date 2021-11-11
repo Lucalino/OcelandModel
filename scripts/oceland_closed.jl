@@ -165,7 +165,7 @@ elseif calc_mode == 4
         end
 
         sol_df = DataFrame(sol, col_names)
-        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_eq_MC_fixedpoints_$(nb_runs)_runs_domain10000.csv"), sol_df)
+        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_eq_MC_fixedpoints_$(nb_runs)_runs_domain1000.csv"), sol_df)
         #println(sol_df)
 
     end

@@ -36,8 +36,10 @@ end
 function cm_parameter_scatter_plots(df::DataFrame, system, idtext, nb_bins = 100)
     ms = 5.0
 
-    x = ["spwp", "sfc", "ϵ", "L", "u", "wsat", "a", "b", "ep", "nZr", "α", "eo", "Li"]
-    x_units = ["", "", "", " [km]", " [m/s]", " [mm]", "", "", " [mm/day]", " [mm]", "", " [mm/day]", " [km]"]
+    x = ["spwp", "sfc", "ϵ", "u", "wsat", "a", "b", "ep", "nZr", "α", "eo"]
+    x_units = ["", "", "", " [m/s]", " [mm]", "", "", " [mm/day]", " [mm]", "", " [mm/day]"]
+    #x = ["u"]
+    #x_units = [" [m/s]"]
     y = ["PR", "Pl", "Po", "El", "infilt", "runoff"] 
     y_units = ["", " [mm/day]", " [mm/day]", " [mm/day]", "", " [mm/day]"]
     
@@ -53,6 +55,7 @@ function cm_parameter_scatter_plots(df::DataFrame, system, idtext, nb_bins = 100
         
         scatter!(ax1, df[!,x[n]], df[!,y[1]], markersize = ms)
         lines!(ax1, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[1],nb_bins), color = :red)
+        #lines!(ax1, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[2],nb_bins) ./ cm_mean_of_bins!(df, x[n], y[3], nb_bins), color = :red)
         hlines!(ax1, mean(df[:,y[1]]), color = :orange)
         scatter!(ax2, df[!,x[n]], df[!,y[2]], markersize = ms)
         lines!(ax2, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[2],nb_bins), color = :red)
@@ -89,7 +92,7 @@ function cm_parameter_scatter_plots(df::DataFrame, system, idtext, nb_bins = 100
 
         supertitle = fig[0, :] = Label(fig, "Domain size = $(round(df[1, "L"], digits = 0)) km", textsize = 22)
 
-        save(plotsdir("Closed model","Parameter scatter plots/", system * "/cm_10000runs_" * idtext * "_$(x[n])_scatter.png"),fig)
+        save(plotsdir("Closed model","Parameter scatter plots/", system * "/cm_s_10000runs_" * idtext * "_$(x[n])_scatter.png"),fig)
         #return fig
     end
 end
@@ -97,8 +100,8 @@ end
 function cm_param_vars_scatter_plots(df::DataFrame, system, idtext, nb_bins = 100)
     ms = 5.0
 
-    x = ["spwp", "sfc", "ϵ", "L", "u", "wsat", "a", "b", "ep", "nZr", "α", "eo", "Li"]
-    x_units = ["", "", "", " [km]", " [m/s]", " [mm]", "", "", " [mm/day]", " [mm]", "", " [mm/day]", " [km]"]
+    x = ["spwp", "ϵ", "u", "wsat", "a", "α", "eo"]
+    x_units = ["", "", " [m/s]", " [mm]", "", "", " [mm/day]"]
     y = ["s", "wl", "wo"] 
     y_units = ["", " [mm]", " [mm]"]
     
@@ -139,8 +142,8 @@ function cm_domainsize_influence_scatter_plots(df1::DataFrame, df2::DataFrame, s
     ms = 5.0
     lw = 3.0
 
-    x = ["spwp", "u", "α"]
-    x_units = ["", " [m/s]", ""]
+    x = ["spwp", "ϵ", "u", "wsat", "a", "b", "ep", "nZr", "α", "eo"]
+    x_units = ["", "", " [m/s]", " [mm]", "", "", " [mm/day]", " [mm]", "", " [mm/day]"]
     y = ["PR", "Pl", "Po", "El", "infilt", "runoff"] 
     y_units = ["", " [mm/day]", " [mm/day]", " [mm/day]", "", " [mm/day]"]
     
@@ -157,8 +160,10 @@ function cm_domainsize_influence_scatter_plots(df1::DataFrame, df2::DataFrame, s
         scatter!(ax1, df1[!,x[n]], df1[!,y[1]], color = (:royalblue, 0.6), markersize = ms)
         scatter!(ax1, df2[!,x[n]], df2[!,y[1]], color = (:chartreuse4, 0.6), markersize = ms)
         lines!(ax1, sort(df1, x[n])[!,x[n]], cm_mean_of_bins!(df1,x[n],y[1],nb_bins), linewidth = lw, color = :midnightblue)
+        #lines!(ax1, sort(df1, x[n])[!,x[n]], cm_mean_of_bins!(df1,x[n],y[2],nb_bins) ./ cm_mean_of_bins!(df1, x[n], y[3], nb_bins), linewidth = lw, color = :midnightblue)
         hlines!(ax1, mean(df1[:,y[1]]), linewidth = lw, color = :midnightblue)
         lines!(ax1, sort(df2, x[n])[!,x[n]], cm_mean_of_bins!(df2,x[n],y[1],nb_bins), linewidth = lw, color = :darkgreen)
+        #lines!(ax1, sort(df2, x[n])[!,x[n]], cm_mean_of_bins!(df2,x[n],y[2],nb_bins) ./cm_mean_of_bins!(df2,x[n],y[3],nb_bins), linewidth = lw, color = :darkgreen)
         hlines!(ax1, mean(df2[:,y[1]]), linewidth = lw, color = :darkgreen)
 
         scatter!(ax2, df1[!,x[n]], df1[!,y[2]], color = (:royalblue, 0.6), markersize = ms)
@@ -218,4 +223,45 @@ function cm_domainsize_influence_scatter_plots(df1::DataFrame, df2::DataFrame, s
         save(plotsdir("Closed model","Parameter scatter plots/", system * "/cm_10000runs_L1000+L10000_$(x[n])_scatter.png"),fig)
         #return fig
     end
+end
+
+function simple_scatter_plot(system, domain, df1, df2, x, y, xlabel, ylabel)
+    fig = Figure()
+    ax  = Axis(fig[1,1])
+    hidespines!(ax, :t, :r)
+    scatter!(ax, df1[!,x], df1[!,y], color = (:royalblue, 0.6), markersize = 5.0)
+    #scatter!(ax, df2[!,x], df2[!,y], color = (:chartreuse4, 0.6), markersize = 5.0)
+    ax.xlabel = xlabel
+    ax.ylabel = ylabel
+    save(plotsdir("Closed model", "Parameter scatter plots/", system * "/cm_10000runs_domain" * domain * "_" * x * "_" * y * ".png"),fig)
+end
+
+
+
+function PR_u_plots()
+    nb_bins = 10
+    pw1000lw = sort(pw1000, "wl")[1:1000, :]
+    pw10000lw = sort(pw10000, "wl")[1:1000, :]
+    pw1000hw = sort(pw1000, "wl")[9001:10000, :]
+    pw10000hw = sort(pw10000, "wl")[9001:10000, :]
+    fig = Figure(resolution = (1000, 600))
+    ax1 = Axis(fig[1,1])
+    ax2 = Axis(fig[1,2])
+    hidespines!(ax1, :t, :r)
+    hidespines!(ax2, :t, :r)
+    scatter!(ax1, pw1000lw[!,"u"], pw1000lw[!,"PR"], color = (:lightseagreen, 0.6), markersize = 5.0)
+    scatter!(ax1, pw1000hw[!,"u"], pw1000hw[!,"PR"], color = (:royalblue, 0.6), markersize = 5.0)
+    lines!(ax1, sort(pw1000lw, "u")[!,"u"], cm_mean_of_bins!(pw1000lw,"u","PR",nb_bins), label = "low wl-values, dw_mean = 0.246", linewidth = 3.0, color = :lightseagreen)
+    lines!(ax1, sort(pw1000hw, "u")[!,"u"], cm_mean_of_bins!(pw1000hw,"u","PR",nb_bins), label = "high wl-values, dw_mean = 0.251", linewidth = 3.0, color = :royalblue)
+    axislegend(ax1, position = :rb, frame_visible = false)
+    scatter!(ax2, pw10000lw[!,"u"], pw10000lw[!,"PR"], color = (:greenyellow, 0.6), markersize = 5.0)
+    scatter!(ax2, pw10000hw[!,"u"], pw10000hw[!,"PR"], color = (:chartreuse4, 0.6), markersize = 5.0)
+    lines!(ax2, sort(pw10000lw, "u")[!,"u"], cm_mean_of_bins!(pw10000lw,"u","PR",nb_bins), label = "low wl-values, dw_mean = 2.136", linewidth = 3.0, color = :greenyellow)
+    lines!(ax2, sort(pw10000hw, "u")[!,"u"], cm_mean_of_bins!(pw10000hw,"u","PR",nb_bins), label = "high wl-values, dw_mean = 1.486", linewidth = 3.0, color = :chartreuse4)
+    axislegend(ax2, position = :rb, frame_visible = false)
+
+    ax1.xlabel = "u [m/s]"
+    ax2.xlabel = "u [m/s]"
+    ax1.ylabel = "PR"
+    save(plotsdir("Closed model", "Parameter scatter plots/", "piecewise/cm_10000runs_domain_both_PR-u-regimes.png"),fig)
 end

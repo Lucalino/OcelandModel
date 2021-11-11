@@ -129,4 +129,31 @@ function diffeq_issue()
     return fig
 end
 
-td = cm_rand_params()
+#td = cm_rand_params()
+
+function hm_plot()
+    sr = range(0.0, 1.0, length = 100)
+    wr = range(40.0, 60.0, length = 100)
+    blc = [ exp(15.0 * (w / 72.0 - 0.58)) * (1 - s^2) - (4.3/2 * tanh(10 * (s - (0.3+0.6)/2 ) ) + 4.3/2) for s in sr, w in wr]
+    fig = Figure()
+    ax1  = Axis(fig[1,1])
+    hm = heatmap!(ax1, sr, wr, blc)
+    Colorbar(fig[1,2], hm)
+    return fig
+end
+
+function line_plot()
+    s = collect(0.0:0.01:1.0)
+    ep = 4.3
+    pt = 10.0
+    spwp = 0.3
+    sfc = 0.6
+    fig = Figure()
+    ax  = Axis(fig[1,1])
+    hidespines!(ax, :t, :r)
+    lines!(ax, s, (ep/2 .* tanh.( pt .* (s .- (spwp.+sfc)./2 ) ) .+ ep./2) ./ (1 .- s.^2), color = (:royalblue, 0.6), linewidth = 3.0, label = "Pl = El / Φ")
+    ax.xlabel = "soil moisture s"
+    ax.ylabel = "land precipitation Pl [mm/day]"
+    axislegend(ax, position = :lt, frame_visible = false)
+    save(plotsdir("Closed model", "Pl-s.png"),fig)
+end

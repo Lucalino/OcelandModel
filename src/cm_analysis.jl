@@ -14,10 +14,17 @@ function cm_derived_quantities!(df_name)
     
     df.Pl = exp.(df.a .* (df.wl ./ df.wsat .- df.b))
     df.Po = exp.(df.a .* (df.wo ./ df.wsat .- df.b))
+    df.Ptot = df.α .* df.Pl .+ (1 .- df.α) .* df.Po
     df.El = df.ep./2 .* tanh.(df.pt .* (df.s .- (df.spwp .+ df.sfc)./2 ) ) .+ df.ep ./ 2
     df.infilt = 1 .- df.ϵ .* df.s.^df.r
     df.runoff = (1 .- df.infilt) .* df.Pl
     df.PR = df.Pl ./ df.Po
+    df.dw = df.wo .- df.wl
+    df.A  = (df.wo .- df.wl) .* df.u ./ (df.α .* df.L)
+    df.B  = (df.wo .- df.wl) .* df.u ./ ((1.0 .- df.α) .* df.L)
+    df.sblc = (df.Pl .* df.infilt .- df.El) ./ df.nZr
+    df.lblc = df.El .- df.Pl .+ df.A
+    df.oblc = df.eo .- df.Po .- df.B
 
     #convert to better units
     df.L = df.L .* mm2km(1.0)
@@ -105,7 +112,7 @@ function cm_fixed_params(n::Int)
 end
 
 function cm_mean_of_bins!(df::DataFrame, param::String, var::String, nb_bins::Int)
-    df = sort(df, param)
+    df = sort!(df, param)
     col_name = string("mean_",var)
     df[!,col_name] .= 1.0
     nb_rows = nrow(df)
@@ -149,7 +156,7 @@ function cm_rand_params()
         :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
         :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
         :u    => rand(Uniform(5.0, 10.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
-        :L    => 10000.0 * km2mm(1.0), #rand(Uniform(500.0, 5000.0)) * km2mm(1.0), #[mm] domain size
+        :L    => 1000.0 * km2mm(1.0), #rand(Uniform(500.0, 5000.0)) * km2mm(1.0), #[mm] domain size
         :pt   => 10.0, #tuning parameter for tanh function
     )
 

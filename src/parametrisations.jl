@@ -77,7 +77,7 @@ Smooth parametrisation of land evapotranspiration that takes three parameters
 A = Ep/2, B = tuning_parameter and C = (spwp + sfc)/2 in the form of a dictionary.
 
 """
-function evap_tanh(s, p::Dict)
+function evap_tanh(s, p::Dict{Symbol, Float64})
     @unpack spwp, sfc, ep, pt = p
     return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
 end
@@ -126,7 +126,7 @@ To obtain the absolute infiltration amount, the result needs to be multiplied by
 
 Defined e.g. in Rodriguez‐Iturbe et al. (1991), DOI: 10.1029/91WR01035
 """
-function infiltration(s, p::Dict)
+function infiltration(s, p::Dict{Symbol, Float64})
     @unpack ϵ, r = p
     return 1 - ϵ*s^r
 end
@@ -164,7 +164,7 @@ saturation water vapour pass, w_sat, and two numerical parameters, a and b.
 Defined by Bretherton et al. (2004), DOI:10.1175/1520-0442(2004)017<1517:RBWVPA>2.0.CO;2
 
 """
-function precip(w,p::Dict)
+function precip(w,p::Dict{Symbol, Float64})
     @unpack wsat, a, b = p
     return exp(a*(w / wsat - b))
 end

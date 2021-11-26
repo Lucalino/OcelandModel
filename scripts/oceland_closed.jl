@@ -39,7 +39,7 @@ include(srcdir("cm_plotting.jl"))
 # 4  : system solved with DynamicalSystems.jl package with smooth OR piecewise defined E_l
 # 5  : system solved with IntervalRootFinding.jl. Precipitation parametrised, E_l piecewise defined
 
-calc_mode = 40
+calc_mode = 4
 
 
 if calc_mode == 1
@@ -51,14 +51,14 @@ if calc_mode == 1
     for i = 1:3
 
         #Solve the ODE for s(t)
-        p = cm_fixed_params(i)
+        p1 = cm_fixed_params(i)
         s0 = 0.3 #initial condition
-        tspan = (0.0,150.0) #in days
-        prob = ODEProblem(soilmoisture,s0,tspan,p)
-        sol = solve(prob, reltol=1e-6,saveat=1.0)
-        @unpack pa = p
+        tspan1 = (0.0,150.0) #in days
+        prob1 = ODEProblem(soilmoisture,s0,tspan1,p1)
+        sol1 = solve(prob1, reltol=1e-6,saveat=1.0)
+        @unpack pa = p1
         #Plot s(t) over t
-        lines!(sol.t,sol.u,label= "Pa = $pa")
+        lines!(sol1.t,sol1.u,label= "Pa = $pa")
 
     end
 
@@ -93,7 +93,7 @@ elseif calc_mode == 2
 
     # Defining the system of equations
 
-    p = cm_rand_params()
+    p2 = cm_rand_params()
 
     function f!(F, x, p)
 
@@ -106,7 +106,7 @@ elseif calc_mode == 2
     end
 
 
-    function cm_MC_nlsolve(nb_runs)
+    function cm_MC_nlsolve(nb_runs, p)
 
         p_names = keys(p)
         col_names = [string(el) for el in p_names]
@@ -126,36 +126,37 @@ elseif calc_mode == 2
         println(sol_df)
     end
 
-    #cm_MC_nlsolve(5)
+    #cm_MC_nlsolve(5, p2)
     
 
 elseif calc_mode == 3
 
-    p = cm_fixed_params(1)
+    p3 = cm_fixed_params(1)
 
-    tspan = (0.0, 100.0)
+    tspan3 = (0.0, 100.0)
     x0 = [0.3, 60.0, 40.0]
-    prob = ODEProblem(closed_model_pw, x0, tspan, p)
-    sol = solve(prob)
+    prob3 = ODEProblem(closed_model_pw, x0, tspan3, p3)
+    sol3 = solve(prob3)
 
-    st  = sol.u[1][1]
-    wlt = sol.u[1][2]
-    wot = sol.u[1][3]
+    st  = sol3.u[1][1]
+    wlt = sol3.u[1][2]
+    wot = sol3.u[1][3]
 
-    for n = 2:length(sol.t)
-        st  = [st; sol.u[n][1]]
-        wlt = [wlt; sol.u[n][2]]
-        wot = [wot; sol.u[n][3]]
+    for n = 2:length(sol3.t)
+        st  = [st; sol3.u[n][1]]
+        wlt = [wlt; sol3.u[n][2]]
+        wot = [wot; sol3.u[n][3]]
     end
 
-    cm_t_evolution_plot(st, wlt, wot, sol.t)
+    cm_t_evolution_plot(st, wlt, wot, sol3.t)
 
 
 elseif calc_mode == 4
 
     function cm_MC_fixedpoints(nb_runs, system)
 
-        col_names = [string(el) for el in keys(cm_rand_params())]
+        #col_names = [string(el) for el in keys(cm_rand_params())]
+        col_names = [string(el) for el in keys(cm_alphavar_params())]
         col_names = append!(col_names, ["s", "wl", "wo"])
         sol = Array{Float64}(undef, 0, length(col_names))
         x0 = @SVector [0.5, 50.0, 50.0]
@@ -165,12 +166,12 @@ elseif calc_mode == 4
         end
 
         sol_df = DataFrame(sol, col_names)
-        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_eq_MC_fixedpoints_$(nb_runs)_runs_domain1000.csv"), sol_df)
+        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_variable-α_bunt_eq_MC_fixedpoints_$(nb_runs)_runs.csv"), sol_df)
         #println(sol_df)
 
     end
 
-    cm_MC_fixedpoints(10000, "smooth")
+    cm_MC_fixedpoints(5000, "smooth")
 
     # p = cm_rand_params()
     # x0 = @SVector [0.6, 40.0, 40.0]
@@ -183,7 +184,7 @@ elseif calc_mode == 4
 
     #@btime closed_model_smooth($(x0), $params, 0.0)  
 
-    
+
 elseif calc_mode == 5
 
     closure_pw = x -> closed_model_piecewise(x, params, 0.0)

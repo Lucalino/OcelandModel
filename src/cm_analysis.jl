@@ -1,6 +1,31 @@
 # Functions used in the closed model analysis
 # File created on 8th October 2021 by Luca Schmidt
 
+
+function cm_alphavar_params()
+
+    d = Dict{Symbol, Float64}(
+        :spwp => rand((0.3, 0.4)),     #permanent wilting point
+        :ep   => 4.38,    #[mm/day] potential evaporation over land in mm/day, taken from [1]
+        :pt   => 10.0,    #tuning parameter in tanh function
+        :eo   => 3.0,     #[mm/day] ocean evaporation rate
+        :ϵ    => 1.0,     #numerical parameter from Rodriguez-Iturbe et al. (1991)
+        :r    => 2.0,     #numerical parameter from Rodriguez-Iturbe et al. (1991)
+        :α    => rand(Uniform(0.0, 1.0)),     #land fraction
+        :nZr  => 100.0,   #[mm] reservoir depth/"field storage capacity of the soil"
+        :a    => 15.6,    #numerical parameter from Bretherton et al. (2004)
+        :b    => 0.603,   #numerical parameter from Bretherton et al. (2004)
+        :wsat => 72.0,    #[mm] saturation water vapour pass derived from plots in Bretherton et al. ( 2004)
+        :u    => rand((5.0, 10.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
+        :L    => rand((1000.0, 10000.0)) * km2mm(1.0), #[mm] domain size
+    )
+
+    d[:sfc] = d[:spwp] + 0.3 #field capacity
+    return d
+end
+
+
+
 """
     cm_derived_quantities!(df::DataFrame)
 
@@ -16,47 +41,28 @@ function cm_derived_quantities!(df_name)
     df.Po = exp.(df.a .* (df.wo ./ df.wsat .- df.b))
     df.Ptot = df.α .* df.Pl .+ (1 .- df.α) .* df.Po
     df.El = df.ep./2 .* tanh.(df.pt .* (df.s .- (df.spwp .+ df.sfc)./2 ) ) .+ df.ep ./ 2
-    df.infilt = 1 .- df.ϵ .* df.s.^df.r
-    df.runoff = (1 .- df.infilt) .* df.Pl
+    df.Φ = 1 .- df.ϵ .* df.s.^df.r
+    df.R = (1 .- df.Φ) .* df.Pl
     df.PR = df.Pl ./ df.Po
     df.dw = df.wo .- df.wl
     df.A  = (df.wo .- df.wl) .* df.u ./ (df.α .* df.L)
     df.B  = (df.wo .- df.wl) .* df.u ./ ((1.0 .- df.α) .* df.L)
-    df.sblc = (df.Pl .* df.infilt .- df.El) ./ df.nZr
+    df.sblc = (df.Pl .* df.Φ .- df.El) ./ df.nZr
     df.lblc = df.El .- df.Pl .+ df.A
     df.oblc = df.eo .- df.Po .- df.B
 
     #convert to better units
-    df.L = df.L .* mm2km(1.0)
-    df.Li = df.α .* df.L
-    df.u = df.u .* (mm2m(1.0) ./ day2s(1.0))
+    df.Lkm = df.L .* mm2km(1.0)
+    df.Likm = df.α .* df.Lkm
+    df.ums = df.u .* (mm2m(1.0) ./ day2s(1.0))
     CSV.write(datadir("sims", df_name * "_all_quantities.csv"), df)
     return df
 end
 
 
 
-function cm_eq_nlsolve(x0)
-
-    p = cm_rand_params()    
-    system = (F, x) -> f!(F, x, p)    
-    solution = nlsolve(system, x0)    
-    sol_vec = transpose(solution.zero)
-    p_vals = transpose(collect(values(p)))
-    
-    if converged(solution) == true
-        convergence = 1
-    else
-        convergence = 0
-    end
-
-    sol_row = [p_vals sol_vec convergence]
-
-    return sol_row
-end
-
 function cm_eq_fixedpoints(system, x0)
-    p = cm_rand_params() 
+    p = cm_alphavar_params() #cm_rand_params() 
 
     if system == "smooth"
         dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, p)
@@ -84,6 +90,26 @@ function cm_eq_fixedpoints(system, x0)
         solrow = [p_vals transpose(fpm[1,:])]
     end
     return solrow
+end
+
+
+function cm_eq_nlsolve(x0)
+
+    p = cm_rand_params()    
+    system = (F, x) -> f!(F, x, p)    
+    solution = nlsolve(system, x0)    
+    sol_vec = transpose(solution.zero)
+    p_vals = transpose(collect(values(p)))
+    
+    if converged(solution) == true
+        convergence = 1
+    else
+        convergence = 0
+    end
+
+    sol_row = [p_vals sol_vec convergence]
+
+    return sol_row
 end
 
 
@@ -164,4 +190,5 @@ function cm_rand_params()
 
     return d
 end
+
 

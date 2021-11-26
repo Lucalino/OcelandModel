@@ -1,7 +1,7 @@
 # OCELAND MODEL - OPEN VERSION
 
 # written by Luca Schmidt
-# started 11th May 2021
+# started 16th November 2021
 
 # The open oceland model comprises three domains, two ocean parts and a land part in the middle, 
 # representing a tropical island.
@@ -12,78 +12,46 @@
 
 using DrWatson
 @quickactivate "Oceland Model"
-#using PyPlot
-#pygui(true)
+using BenchmarkTools
+using CairoMakie
+using CSV
+using DataFrames
 using DifferentialEquations
-using IntervalRootFinding
-using IntervalArithmetic
+using Distributions
+using DynamicalSystems
 using StaticArrays
 using Random
-using Distributions
-using DataFrames
-using BenchmarkTools
-using CSV
+include(srcdir("model_versions.jl"))
 include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("om_analysis.jl"))
 
 
-##### EQUILIBRIUM SYSTEM ######
+function om_MC_fixedpoints(nb_runs, system)
 
-function f_one(variables, parameters, t)
-    w1, w2, w3, s = variables
-    @unpack spwp, sfc, Ep, eo, ϵ, r, nZr, w0, L, Li, Lo1, Lo2, u, a, b, w_sat = parameters
-    return SVector(2 * u * (w0 - w1) / Lo1 + eo - exp(a * (w1/w_sat - b)), 
-                   2 * u * (2 * w1 - w2 - w0) / Li - exp(a * (w2/w_sat - b)),
-                   2 * u * (2 * w2 - 2 * w1 - w3 + w0) / Lo2 + eo - exp(a * (w3/w_sat - b)),
-                   exp(a * (w2/w_sat - b)) * infiltration(s, ϵ, r)
-                   )
-end
+    col_names = [string(el) for el in keys(om_rand_params())]
+    col_names = append!(col_names, ["s", "w1", "w2", "w3", "status"])
+    sol = Array{Float64}(undef, 0, length(col_names))
+    x0 = @SVector [0.5, 50.0, 50.0, 50.0]
 
-
-function f_two(variables, parameters, t)
-    w1, w2, w3, s = variables
-    @unpack spwp, sfc, Ep, eo, ϵ, r, nZr, w0, L, Li, Lo1, Lo2, u, a, b, w_sat = parameters
-    return SVector(2 * u * (w0 - w1) / Lo1 + eo - exp(a * (w1/w_sat - b)), 
-                   2 * u * (2 * w1 - w2 - w0) / Li + Ep/(sfc - spwp) * (s - spwp) - exp(a * (w2/w_sat - b)),
-                   2 * u * (2 * w2 - 2 * w1 - w3 + w0) / Lo2 + eo - exp(a * (w3/w_sat - b)),
-                   exp(a * (w2/w_sat - b)) * infiltration(s, ϵ, r) - Ep/(sfc - spwp) * (s - spwp)
-                   )
-end
-
-
-function f_three(variables, parameters, t)
-    w1, w2, w3, s = variables #this line just gives arguments in the right order, "variables" can be any iterable object
-    @unpack spwp, sfc, Ep, eo, ϵ, r, nZr, w0, L, Li, Lo1, Lo2, u, a, b, w_sat = parameters
-    return SVector(2 * u * (w0 - w1) / Lo1 + eo - exp(a * (w1/w_sat - b)), 
-                   2 * u * (2 * w1 - w2 - w0) / Li + Ep - exp(a * (w2/w_sat - b)),
-                   2 * u * (2 * w2 - 2 * w1 - w3 + w0) / Lo2 + eo - exp(a * (w3/w_sat - b)),
-                   exp(a * (w2/w_sat - b)) * infiltration(s, ϵ, r) - Ep
-                   )
-end
-
-
-##### RANDOM SAMPLING AND RESPECTIVE SOLUTIONS ######
-
-function monte_carlo_run(nb_runs, w0_fixed = Nothing)
-
-    output_columns = 20
-    col_names = ["spwp", "sfc", "Ep", "eo", "ϵ", "r", "nZr", 
-                 "w0", "L", "Li", "Lo1", "Lo2", "u", "a", "b",
-                 "w_sat", "w1", "w2", "w3", "s"]
-
-    #initialising output matrix
-    sol = Array{Float64}(undef, 0, output_columns)
-
-    for i=1:nb_runs
-        params = om_rand_params(w0_fixed)
-        sol = [sol; om_eq_solution(f_one, f_two, f_three, params, output_columns)]
+    for n = 1:nb_runs
+        sol = [sol; om_fixedpoints(x0, system)]
     end
 
     sol_df = DataFrame(sol, col_names)
-    CSV.write(datadir("sims", "om_eq_MonteCarlo_scan_$(nb_runs)_runs_domain10000.csv"), sol_df)
+    d = Int(round(mean(sol_df.L) .* mm2km(1.0), digits = 1))
+    CSV.write(datadir("sims", "open model pmscan", "om_$(system)_MC_fixedpoints_runs$(nb_runs)_domain$(d).csv"), sol_df)
 end
 
-#@btime monte_carlo_run(100000)
-#monte_carlo_run(100000)
+#om_MC_fixedpoints(10000, "v2_closed") 
 
+# p = cm_rand_params()
+# x0 = @SVector [0.6, 40.0, 40.0]
+# dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, p)
+# diffeq = (alg = Vern9(), adaptive = false, dt = 0.001, reltol = 1e-8, abstol = 1e-8)
+# sg  = range(0.0, 1.0; length = 100)
+# wlg = wog = range(0.0, p[:wsat]; length = 100)
+# basins, attractors = basins_of_attraction((sg, wlg, wog), dynsys)
+#fig = cm_basins_plot(basins[1,:,:], wlg, wog)
+
+#@btime closed_model_smooth($(x0), $params, 0.0)  

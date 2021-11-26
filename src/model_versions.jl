@@ -35,6 +35,59 @@ function closed_model_pw(dx, x, p, t)
     dx[3] = eo - precip(x[3], p) - (x[3] - x[2]) * u / ((1-α) * L)
 end
 
+
+function open_model_v1(x, p, t)
+    # This model version tracks atmospheric moisture accumulation as a function of location x and computes advection 
+    # as boundary value times windspeed rather than using the mean value for advection. The mean values that are the 
+    # variables are computed under the assumption that wvp(x) is linear.
+
+    @unpack L1, L2, L3, nZr, u, eo, w0 = p
+
+    # Variable definitions: s = x[1], w1 = x[2], w2 = x[3], w3 = x[4]
+
+    ds  = (precip(x[3], p) * infiltration(x[1], p) - evap_tanh(x[1], p)) / nZr
+    dw1 = 2 * (w0 - x[2]) * u/L1 + eo - precip(x[2], p)
+    dw2 = 2 * (2*x[2] - w0 - x[3]) * u/L2 + evap_tanh(x[1], p) - precip(x[3], p)
+    dw3 = 2 * (2*x[3] - 2*x[2] - x[4] + w0) * u/L3 + eo - precip(x[4], p)
+
+    return SVector(ds, dw1, dw2, dw3)
+end
+
+function open_model_v2(x, p, t)
+    # This model version is the open analogy to the closed model where we don't track moisture accumulation over space 
+    # and instead only consider the mean value for each atmsopheric box. Advection is then this mean value times wind
+    # speed at each boundary.
+
+    @unpack L1, L2, L3, nZr, u, eo, w0 = p
+
+    # Variable definitions: s = x[1], w1 = x[2], w2 = x[3], w3 = x[4]
+
+    ds  = (precip(x[3], p) * infiltration(x[1], p) - evap_tanh(x[1], p)) / nZr
+    dw1 = eo - precip(x[2], p) + (w0 - x[2]) * u/L1
+    dw2 = evap_tanh(x[1], p) - precip(x[3], p) + (x[2] - x[3]) * u/L2
+    dw3 = eo - precip(x[4], p) + (x[3] - x[4]) * u/L3
+
+    return SVector(ds, dw1, dw2, dw3)
+end
+
+function open_model_v2_closed(x, p, t)
+    # This model version is the open analogy to the closed model where we don't track moisture accumulation over space 
+    # and instead only consider the mean value for each atmsopheric box. Advection is then this mean value times wind
+    # speed at each boundary. In contrast to the open_model_v2, we "close" the model by setting w0 = w3.
+
+    @unpack L1, L2, L3, nZr, u, eo = p
+
+    # Variable definitions: s = x[1], w1 = x[2], w2 = x[3], w3 = x[4]
+
+    ds  = (precip(x[3], p) * infiltration(x[1], p) - evap_tanh(x[1], p)) / nZr
+    dw1 = eo - precip(x[2], p) + (x[4] - x[2]) * u/L1
+    dw2 = evap_tanh(x[1], p) - precip(x[3], p) + (x[2] - x[3]) * u/L2
+    dw3 = eo - precip(x[4], p) + (x[3] - x[4]) * u/L3
+
+    return SVector(ds, dw1, dw2, dw3)
+end
+
+
 function soilmoisture(s,p,t)
     @unpack pa, nZr = p
     #ds =( ( (1-α) * pa + land_evap(s, spwp, sfc, ep) ) * infiltration(s, ϵ,r) - land_evap(s, spwp, sfc, ep) ) / nZr

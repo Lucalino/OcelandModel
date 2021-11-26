@@ -1,11 +1,48 @@
+function om_derived_quantities!(df_name)
+
+    df = CSV.read(datadir("sims", df_name * ".csv"), DataFrame)
+
+    #remove parameter sets for which no fixed point was found
+    dfclean = df[(df.s .> 0.0) .| (df.w1 .> 0.0) .| (df.w2 .> 0.0) .| (df.w3 .> 0.0), : ]
+    
+    #compute derived quantities
+    dfclean.P1 = exp.(dfclean.a .* (dfclean.w1 ./ dfclean.wsat .- dfclean.b))
+    dfclean.P2 = exp.(dfclean.a .* (dfclean.w2 ./ dfclean.wsat .- dfclean.b))
+    dfclean.P3 = exp.(dfclean.a .* (dfclean.w3 ./ dfclean.wsat .- dfclean.b))
+    dfclean.Ptot = dfclean.α .* dfclean.P2 .+ dfclean.L1 ./ dfclean.L .* dfclean.P1 .+ dfclean.L3 ./ dfclean.L .* dfclean.P3
+    dfclean.El = dfclean.ep ./2 .* tanh.(dfclean.pt .* (dfclean.s .- (dfclean.spwp .+ dfclean.sfc)./2 ) ) .+ dfclean.ep ./ 2
+    dfclean.Φ  = 1 .- dfclean.ϵ .* dfclean.s.^dfclean.r
+    dfclean.R  = (1 .- dfclean.Φ) .* dfclean.P2
+    dfclean.PR = (dfclean.L1 .+ dfclean.L3) .* dfclean.P2 ./ (dfclean.L1 .* dfclean.P1 + dfclean.L3 .* dfclean.P3)
+    
+    if occursin(r"v2_closed", df_name) == true
+        dfclean = select!(dfclean, Not(:w0))
+        dfclean.wo = (dfclean.L1 .* dfclean.w1 + dfclean.L3 .* dfclean.w3) ./ (dfclean.L1 .+ dfclean.L3)
+    end
+
+    #convert to better units
+    dfclean.L = dfclean.L .* mm2km(1.0)
+    dfclean.L1 = dfclean.L1 .* mm2km(1.0)
+    dfclean.L2 = dfclean.L2 .* mm2km(1.0)
+    dfclean.L3 = dfclean.L3 .* mm2km(1.0)
+    dfclean.u = dfclean.u .* (mm2m(1.0) ./ day2s(1.0))
+    
+    CSV.write(datadir("sims", df_name * "_all_quantities.csv"), dfclean)
+    return dfclean
+end
+
+
+
+
+
 """
-    derived_quantities!(df::DataFrame)
+    derived_quantities_old!(df::DataFrame)
 
 Compute P1, P2, P3, El, infilt, runoff and PR from the equilibrium solutions for w1, w2, w3 and s 
 in a DataFrame and return them as new columns of the input DataFrame.
 The input dataframe also needs to contain values for the relevant parameter.
 """
-function derived_quantities!(df::DataFrame)
+function derived_quantities_old!(df::DataFrame)
         
     df.P1 = precip.(df.w1, df.w_sat, df.a, df.b)
     df.P2 = precip.(df.w2, df.w_sat, df.a, df.b)
@@ -27,22 +64,42 @@ function derived_quantities!(df::DataFrame)
     return df
 end
 
-function mean_of_bins!(df::DataFrame, param::String, var::String, nb_bins::Int)
-    df = sort(df, param)
-    col_name = string("mean_",var)
-    df[!,col_name] .= 1.0
-    nb_rows = nrow(df)
-    mod(nb_rows, nb_bins) == 0 || error("Number of bins must divide the data set's number of rows")
-    bin_size = Int(nb_rows / nb_bins)
-    bin_start = 1  
 
-    for bin_end in Iterators.countfrom(bin_size, bin_size)
-        bin_end > nb_rows && break
-        df[bin_start:bin_end, col_name] .= mean(df[bin_start:bin_end, var])
-        bin_start = bin_end+1
+function om_fixedpoints(x0, system)
+
+    p = om_rand_params()
+    if system == "v1"
+        dynsys = ContinuousDynamicalSystem(open_model_v1, x0, p)
+    elseif system == "v2"
+        dynsys = ContinuousDynamicalSystem(open_model_v2, x0, p)
+    elseif system == "v2_closed"
+        dynsys = ContinuousDynamicalSystem(open_model_v2_closed, x0, p)
+    else
+        println("Assign valid system name: v1, v2 or v2_closed")
     end
-    return df[!,col_name]
+    box = om_state_space(p)
+    fp, eigs, stable = fixedpoints(dynsys, box)
+    p_vals = transpose(collect(values(p)))
+
+    if stable == [0]
+        println("Unstable fixed point for parameteres ", collect(keys(p)), "=", p_vals, "!")
+    end
+
+    fpm = Matrix(fp)
+
+    if size(fpm, 1) == 0 
+        println("No fixed point for parameters ", collect(keys(p)), "=", p_vals, "!")
+        solrow = [p_vals 0.0 0.0 0.0 0.0 0.0]
+    elseif size(fpm, 1) > 1
+        println("More than one fixed point for ", collect(keys(p)), "=", p_vals, "!")
+        solrow = [p_vals 0.0 0.0 0.0 0.0 2.0]
+    else
+        solrow = [p_vals transpose(fpm[1,:]) 1.0]
+    end
+    return solrow
 end
+
+
 
 
 
@@ -130,14 +187,44 @@ end
 
 
 
+function om_rand_params()
+
+    d = Dict{Symbol, Float64}(
+        :spwp => rand(Uniform(0.20, 0.54)), #permanent wilting point
+        :ep   => rand(Uniform(4.1, 4.5)),   #[mm/day] potential evaporation over land in mm/day, taken from [1]
+        :eo   => rand(Uniform(2.8, 3.2)),   #[mm/day] ocean evaporation rate
+        :ϵ    => rand(Uniform(0.9, 1.1)),   #numerical parameter from Rodriguez-Iturbe et al. (1991)
+        :r    => 2.0,                       #numerical parameter from Rodriguez-Iturbe et al. (1991)
+        :α    => rand(Uniform(0.0, 1.0)),   #land fraction
+        :nZr  => rand(Uniform(90.0, 110.0)),#[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
+        :a    => rand(Uniform(11.4, 15.6)), #numerical parameter from Bretherton et al. (2004)
+        :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
+        :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
+        :u    => rand(Uniform(5.0, 10.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
+        :L    => 10000.0 * km2mm(1.0),       #rand(Uniform(500.0, 5000.0)) * km2mm(1.0), #[mm] domain size
+        :pt   => 10.0,                      #tuning parameter for tanh function
+    )
+
+    d[:sfc] = d[:spwp] + 0.3
+    d[:w0]  = rand(Uniform(0.0, d[:wsat]))  # water vapour pass at windward model boudnary
+    d[:L2]  = d[:α] * d[:L]                 # island length
+    d[:L1]  = d[:L]/2 - d[:L2]/2            # length of first ocean [mm], symmetric configuration
+    d[:L3]  = d[:L] - d[:L2] - d[:L1]       # length of second ocean [mm]
+
+    return d
+end
+
+
+
+
 """
-    om_rand_params()
+    om_rand_params_old()
 
 Create random combinations of parameter values for {spwp, sfc, Ep, eo, ϵ, r, nZr, w0, L, Li, Lo1, Lo2, u, a, b, w_sat}.
 Return dictionary of parameter names and values. Note that some parameter values are fixed and some are computed from
 other randomised parameters.
 """
-function om_rand_params(w0)
+function om_rand_params_old(w0)
     spwp = rand(Uniform(0.35, 0.55)) #permanent wilting point
     sfc = rand(Uniform(spwp, 0.75))  #field capacity > pwp #NEEDS MORE RESEARCH
     Ep = 4.38  #potential evaporation over land [mm/day], taken from [1]
@@ -157,6 +244,16 @@ function om_rand_params(w0)
     a = 15.6    #numerical parameter for precipitation
     b = 0.603   #numerical parameter for precipitation
     return @dict spwp sfc Ep eo ϵ r nZr w0 L Li Lo1 Lo2 u a b w_sat
+end
+
+function om_state_space(p::Dict)
+    @unpack wsat = p
+    s_range  = interval(0.0, 1.0)
+    w1_range = interval(0.0, wsat) 
+    w2_range = interval(0.0, wsat)
+    w3_range = interval(0.0, wsat)
+    box = s_range × w1_range × w2_range × w3_range
+    return box
 end
 
 

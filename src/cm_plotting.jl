@@ -233,7 +233,21 @@ function simple_scatter_plot(system, domain, df1, df2, x, y, xlabel, ylabel)
     #scatter!(ax, df2[!,x], df2[!,y], color = (:chartreuse4, 0.6), markersize = 5.0)
     ax.xlabel = xlabel
     ax.ylabel = ylabel
-    save(plotsdir("Closed model", "Parameter scatter plots/", system * "/cm_10000runs_domain" * domain * "_" * x * "_" * y * ".png"),fig)
+    #save(plotsdir("Closed model", "Parameter scatter plots/", system * "/cm_10000runs_domain" * domain * "_" * x * "_" * y * ".png"),fig)
+end
+
+function PR_alpha_comp_plot(df1, df2, lb1, lb2, x, y, xlab, ylab, ttl, comp)
+    fig = Figure()
+    ax  = Axis(fig[1,1], xlabel = xlab, ylabel = ylab, title = ttl)
+    hidespines!(ax, :t, :r)
+    scatter!(ax, df1[!,x], df1[!,y], color = (:royalblue, 0.6), label = lb1, markersize = 5.0)
+    #scatter!(ax, df2[!,x], df2[!,y], color = (:chartreuse4, 0.6), label = lb2, markersize = 5.0)
+    scatter!(ax, df2[!,x], df2[!,y], color = (:chocolate, 0.6), label = lb2, markersize = 5.0)
+    vlines!(ax, df1[df1.PR .== minimum(df1.PR), "α"][1], linewidth = 3.0, linestyle = :dash, color = (:royalblue, 0.6))
+    vlines!(ax, df2[df2.PR .== minimum(df2.PR), "α"][1], linewidth = 3.0, linestyle = :dash, color = (:chocolate, 0.6))
+    axislegend(ax, position = :lb)
+    save(plotsdir("Closed model", "Parameter scatter plots/", "smooth","PR-alpha_parameter_influences", "PR-alpha_$(comp)_varied.png"),fig)
+    return fig
 end
 
 

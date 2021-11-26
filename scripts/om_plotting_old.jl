@@ -17,7 +17,7 @@ ms= 5.0  #markersize
 df_raw = CSV.read(datadir("sims", "om_eq_MonteCarlo_scan_100000_runs_domain10000.csv"), DataFrame)
 
 #add derived quantities to dataframe
-df = derived_quantities!(df_raw)
+df = derived_quantities_old!(df_raw)
 
 #O: Omega, m: moistening, d: drying
 O1dO2d = filter(row -> row.EminP1 < 0 && row.EminP2 < 0, df)
@@ -28,7 +28,7 @@ O1mO2m = filter(row -> row.EminP1 > 0 && row.EminP2 > 0, df)
 
 nb_bins = 1000
 
-function eight_scatter_plots(df::DataFrame, nb_bins = nb_bins)
+function eight_scatter_plots_old(df::DataFrame, nb_bins = nb_bins)
     x = ["spwp", "sfc", "ϵ", "r", "w0", "Li", "u", "w_sat"]
     y = ["PR"] #["P1", "P2", "P3", "El", "infilt", "runoff", "PR"]
     y_units = [""] #[" [mm/day]", " [mm/day]", " [mm/day]", " mm/day", "", " [mm/day]", ""]

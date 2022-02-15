@@ -14,6 +14,62 @@ function om_derived_quantities!(df_name)
     dfclean.Φ  = 1 .- dfclean.ϵ .* dfclean.s.^dfclean.r
     dfclean.R  = (1 .- dfclean.Φ) .* dfclean.P2
     dfclean.PR = (dfclean.L1 .+ dfclean.L3) .* dfclean.P2 ./ (dfclean.L1 .* dfclean.P1 + dfclean.L3 .* dfclean.P3)
+    dfclean.ds = (dfclean.P2 .* dfclean.Φ .- dfclean.El) ./ dfclean.nZr
+    dfclean.dw2 = dfclean.El .- dfclean.P2 .+ (dfclean.w1 .- dfclean.w2) .* dfclean.u ./ dfclean.L2
+    dfclean.dw3 = dfclean.eo .- dfclean.P3 .+ (dfclean.w2 .- dfclean.w3) .* dfclean.u ./ dfclean.L3
+    dfclean.τ  = dfclean.u ./ dfclean.L
+    dfclean.PR12 = dfclean.P2 ./ dfclean.P1
+    dfclean.Δw1 = dfclean.w0 .- dfclean.w1
+    dfclean.Δw2 = dfclean.w1 .- dfclean.w2
+    dfclean.Δw3 = dfclean.w2 .- dfclean.w3
+    dfclean.Δwtot = dfclean.w0 .- dfclean.w3
+
+
+    if occursin(r"v2_closed", df_name) == true
+        dfclean = select!(dfclean, Not(:w0))
+        dfclean.wo = (dfclean.L1 .* dfclean.w1 + dfclean.L3 .* dfclean.w3) ./ (dfclean.L1 .+ dfclean.L3)
+        dfclean.PR2 = dfclean.P2 ./ (exp.(dfclean.a .* (dfclean.wo ./ dfclean.wsat .- dfclean.b)))
+        dfclean.dw1 = dfclean.eo .- dfclean.P1 .+ (dfclean.w3 .- dfclean.w1) .* dfclean.u ./ dfclean.L1
+    elseif occursin(r"v2_closed", df_name) == false
+        dfclean.dw1 = dfclean.eo .- dfclean.P1 .+ (dfclean.w0 .- dfclean.w1) .* dfclean.u ./ dfclean.L1
+    end
+
+    #convert to better units
+    dfclean.L_km = dfclean.L .* mm2km(1.0)
+    dfclean.L1_km = dfclean.L1 .* mm2km(1.0)
+    dfclean.L2_km = dfclean.L2 .* mm2km(1.0)
+    dfclean.L3_km = dfclean.L3 .* mm2km(1.0)
+    dfclean.u_ms = dfclean.u .* (mm2m(1.0) ./ day2s(1.0))
+    
+    CSV.write(datadir("sims", df_name * "_all_quantities.csv"), dfclean)
+    return dfclean
+end
+
+function om_derived_quantities_lin!(df_name)
+
+    df = CSV.read(datadir("sims", df_name * ".csv"), DataFrame)
+
+    #remove parameter sets for which no fixed point was found
+    dfclean = df[(df.s .> 0.0) .| (df.w1 .> 0.0) .| (df.w2 .> 0.0) .| (df.w3 .> 0.0), : ]
+    
+    #compute derived quantities
+    dfclean.wo_mean = (dfclean.w1 .+ dfclean.w3) ./ 2 
+    dfclean.P1 = 40.0 ./ dfclean.wsat .* dfclean.w1
+    dfclean.P2 = 40.0 ./ dfclean.wsat .* dfclean.w2
+    dfclean.P3 = 40.0 ./ dfclean.wsat .* dfclean.w3
+    dfclean.Po1 = (dfclean.P1 .+ dfclean.P3) ./ 2
+    dfclean.Po2 = 40.0 ./ dfclean.wsat .* dfclean.wo_mean
+    dfclean.Ptot = dfclean.α .* dfclean.P2 .+ dfclean.L1 ./ dfclean.L .* dfclean.P1 .+ dfclean.L3 ./ dfclean.L .* dfclean.P3
+    dfclean.El = dfclean.ep ./2 .* tanh.(dfclean.pt .* (dfclean.s .- (dfclean.spwp .+ dfclean.sfc)./2 ) ) .+ dfclean.ep ./ 2
+    dfclean.Φ  = 1 .- dfclean.ϵ .* dfclean.s.^dfclean.r
+    dfclean.R  = (1 .- dfclean.Φ) .* dfclean.P2
+    dfclean.PR1 = dfclean.P2 ./ dfclean.Po1
+    dfclean.PR2 = dfclean.P2 ./ dfclean.Po2
+    dfclean.ds  = (dfclean.P2 .* dfclean.Φ .- dfclean.El) ./ dfclean.nZr
+    dfclean.dw1 = dfclean.eo .- dfclean.P1 .+ (dfclean.w3 .- dfclean.w1) .* dfclean.u ./ dfclean.L1
+    dfclean.dw2 = dfclean.El .- dfclean.P2 .+ (dfclean.w1 .- dfclean.w2) .* dfclean.u ./ dfclean.L2
+    dfclean.dw3 = dfclean.eo .- dfclean.P3 .+ (dfclean.w2 .- dfclean.w3) .* dfclean.u ./ dfclean.L3
+
     
     if occursin(r"v2_closed", df_name) == true
         dfclean = select!(dfclean, Not(:w0))
@@ -30,9 +86,6 @@ function om_derived_quantities!(df_name)
     CSV.write(datadir("sims", df_name * "_all_quantities.csv"), dfclean)
     return dfclean
 end
-
-
-
 
 
 """
@@ -74,8 +127,10 @@ function om_fixedpoints(x0, system)
         dynsys = ContinuousDynamicalSystem(open_model_v2, x0, p)
     elseif system == "v2_closed"
         dynsys = ContinuousDynamicalSystem(open_model_v2_closed, x0, p)
+    elseif system == "v2_closed_lin"
+        dynsys = ContinuousDynamicalSystem(open_model_v2_closed_linearised, x0, p)
     else
-        println("Assign valid system name: v1, v2 or v2_closed")
+        println("Assign valid system name: v1, v2, v2_closed or v2_closed_lin")
     end
     box = om_state_space(p)
     fp, eigs, stable = fixedpoints(dynsys, box)
@@ -98,8 +153,6 @@ function om_fixedpoints(x0, system)
     end
     return solrow
 end
-
-
 
 
 
@@ -186,6 +239,42 @@ function om_eq_solution(f1, f2, f3, d, nb_cols, w1_lower=0.0, w1_upper=100.0, w2
 end
 
 
+function om_likelihood_moistening_scenarios(d::DataFrame)
+
+    lh1 = nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .> 0),:]) * 100/ nrow(d)
+    lh11 = nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .> 0) .& (d.Δwtot .> 0),:]) * 100/ nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .> 0),:])
+    lh12 = nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .> 0) .& (d.Δwtot .< 0),:]) * 100/ nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .> 0),:])
+    lh2 = nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0),:]) * 100/ nrow(d)
+    lh21 = nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0) .& (d.Δwtot .> 0),:]) * 100/ nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0),:])
+    lh22 = nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0) .& (d.Δwtot .< 0),:]) * 100/ nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0),:])
+    lh3 = nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .< 0) .& (d.Δw3 .> 0),:]) * 100/ nrow(d)
+    lh4 = nrow(d[(d.Δw1 .> 0) .& (d.Δw2 .< 0) .& (d.Δw3 .< 0),:]) * 100/ nrow(d)
+    lh5 = nrow(d[(d.Δw1 .< 0) .& (d.Δw2 .> 0) .& (d.Δw3 .> 0),:]) * 100/ nrow(d)
+    lh6 = nrow(d[(d.Δw1 .< 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0),:]) * 100/ nrow(d)
+    lh61 = nrow(d[(d.Δw1 .< 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0) .& (d.Δwtot .> 0),:]) * 100/ nrow(d[(d.Δw1 .< 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0),:])
+    lh62 = nrow(d[(d.Δw1 .< 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0) .& (d.Δwtot .< 0),:]) * 100/ nrow(d[(d.Δw1 .< 0) .& (d.Δw2 .> 0) .& (d.Δw3 .< 0),:])
+    lh7 = nrow(d[(d.Δw1 .< 0) .& (d.Δw2 .< 0) .& (d.Δw3 .> 0),:]) * 100/ nrow(d)
+    lh8 = nrow(d[(d.Δw1 .< 0) .& (d.Δw2 .< 0) .& (d.Δw3 .< 0),:]) * 100/ nrow(d)
+
+    lh9 = nrow(d[d.Δwtot .> 0,:]) * 100 / nrow(d)
+    lh10 = nrow(d[d.Δwtot .< 0,:]) * 100 / nrow(d)
+
+    println("The likelihood for branch 1 is: $(lh1) %,")
+    println("thereof $(lh11) % where Δw_tot > 0 and $(lh12) % where Δw_tot < 0.")
+    println("The likelihood for branch 2 is: $(lh2) %.")
+    println("thereof $(lh21) % where Δw_tot > 0 and $(lh22) % where Δw_tot < 0.")
+    println("The likelihood for branch 3 is: $(lh3) %.")
+    println("The likelihood for branch 4 is: $(lh4) %.")
+    println("The likelihood for branch 5 is: $(lh5) %.")
+    println("The likelihood for branch 6 is: $(lh6) %.")
+    println("thereof $(lh61) % where Δw_tot > 0 and $(lh62) % where Δw_tot < 0.")
+    println("The likelihood for branch 7 is: $(lh7) %.")
+    println("The likelihood for branch 8 is: $(lh8) %.")
+
+    println("The likelihood for Δw_tot > 0 is: $(lh9) %.")
+    println("The likelihood for Δw_tot > 0 is: $(lh10) %.")
+
+end
 
 function om_rand_params()
 
@@ -199,9 +288,9 @@ function om_rand_params()
         :nZr  => rand(Uniform(90.0, 110.0)),#[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
         :a    => rand(Uniform(11.4, 15.6)), #numerical parameter from Bretherton et al. (2004)
         :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
-        :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
-        :u    => rand(Uniform(5.0, 10.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
-        :L    => 10000.0 * km2mm(1.0),       #rand(Uniform(500.0, 5000.0)) * km2mm(1.0), #[mm] domain size
+        :wsat => rand(Uniform(40.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
+        :u    => rand(Uniform(0.0, 30.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
+        :L    => rand(Uniform(500.0, 5000.0)) * km2mm(1.0), #[mm] domain size
         :pt   => 10.0,                      #tuning parameter for tanh function
     )
 
@@ -209,11 +298,13 @@ function om_rand_params()
     d[:w0]  = rand(Uniform(0.0, d[:wsat]))  # water vapour pass at windward model boudnary
     d[:L2]  = d[:α] * d[:L]                 # island length
     d[:L1]  = d[:L]/2 - d[:L2]/2            # length of first ocean [mm], symmetric configuration
+    #d[:L1] = (d[:L] - d[:L2])/4             # length of first ocean [mm], asymmetric configuration with 3*L1 = L3
+    #d[:L1] = (d[:L] - d[:L2])*3/4             # length of first ocean [mm], asymmetric configuration with L1 = 3*L3
     d[:L3]  = d[:L] - d[:L2] - d[:L1]       # length of second ocean [mm]
+    d[:τ]   = d[:u]/d[:L]                   # rate of atmospheric transport
 
     return d
 end
-
 
 
 
@@ -246,6 +337,7 @@ function om_rand_params_old(w0)
     return @dict spwp sfc Ep eo ϵ r nZr w0 L Li Lo1 Lo2 u a b w_sat
 end
 
+
 function om_state_space(p::Dict)
     @unpack wsat = p
     s_range  = interval(0.0, 1.0)
@@ -255,8 +347,4 @@ function om_state_space(p::Dict)
     box = s_range × w1_range × w2_range × w3_range
     return box
 end
-
-
-
-
 

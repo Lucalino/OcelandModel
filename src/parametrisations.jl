@@ -87,7 +87,6 @@ end
 
 
 
-
 """
     land_evap_diff(s::Number, spwp::Number,sfc::Number,Ep::Number)
 
@@ -224,6 +223,19 @@ Defined by Bretherton et al. (2004), DOI:10.1175/1520-0442(2004)017<1517:RBWVPA>
 """
 function precip_diff(w::Number,w_sat::Number,a::Number,b::Number)
     return a * exp(a*(w / w_sat - b)) / w_sat
+end
+
+
+# Fake linear parametrisations of El(s) and P(w)
+
+function lin_evap(s, p::Dict{Symbol, Float64})
+    @unpack ep = p
+    return ep * s
+end
+
+function lin_precip(w, p::Dict{Symbol, Float64})
+    @unpack wsat = p
+    return 40.0 / wsat * w
 end
 
 

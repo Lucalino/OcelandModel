@@ -45,6 +45,41 @@ function cm_derived_quantities!(df_name)
     df.R = (1 .- df.Φ) .* df.Pl
     df.PR = df.Pl ./ df.Po
     df.dw = df.wo .- df.wl
+
+    if occursin(r"tau", df_name) == true
+        df.A  = (df.wo .- df.wl) .* df.τ ./ df.α
+        df.B  = (df.wo .- df.wl) .* df.τ ./ (1.0 .- df.α)
+
+    elseif occursin(r"tau", df_name) == false
+        df.A  = (df.wo .- df.wl) .* df.u ./ (df.α .* df.L)
+        df.B  = (df.wo .- df.wl) .* df.u ./ ((1.0 .- df.α) .* df.L)
+        
+        #convert to better units
+        df.Lkm = df.L .* mm2km(1.0)
+        df.Likm = df.α .* df.Lkm
+        df.ums = df.u .* (mm2m(1.0) ./ day2s(1.0))
+    end
+    
+    df.sblc = (df.Pl .* df.Φ .- df.El) ./ df.nZr
+    df.lblc = df.El .- df.Pl .+ df.A
+    df.oblc = df.eo .- df.Po .- df.B
+
+    CSV.write(datadir("sims", df_name * "_all_quantities.csv"), df)
+    return df
+end
+
+function cm_derived_quantities_lin!(df_name)
+
+    df = CSV.read(datadir("sims", df_name * ".csv"), DataFrame)
+    
+    df.Pl = 40.0 ./ df.wsat .* df.wl
+    df.Po = 40.0 ./ df.wsat .* df.wo
+    df.Ptot = df.α .* df.Pl .+ (1 .- df.α) .* df.Po
+    df.El = df.ep./2 .* tanh.(df.pt .* (df.s .- (df.spwp .+ df.sfc)./2 ) ) .+ df.ep ./ 2
+    df.Φ = 1 .- df.ϵ .* df.s.^df.r
+    df.R = (1 .- df.Φ) .* df.Pl
+    df.PR = df.Pl ./ df.Po
+    df.dw = df.wo .- df.wl
     df.A  = (df.wo .- df.wl) .* df.u ./ (df.α .* df.L)
     df.B  = (df.wo .- df.wl) .* df.u ./ ((1.0 .- df.α) .* df.L)
     df.sblc = (df.Pl .* df.Φ .- df.El) ./ df.nZr
@@ -61,11 +96,17 @@ end
 
 
 
-function cm_eq_fixedpoints(system, x0)
-    p = cm_alphavar_params() #cm_rand_params() 
+function cm_eq_fixedpoints(system, x0, tau::Bool=false)
+    #p = cm_alphavar_params()
+    p = cm_rand_params(tau) 
 
     if system == "smooth"
-        dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, p)
+        if tau == false
+            dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, p)
+            #dynsys = ContinuousDynamicalSystem(closed_model_linearised, x0, p)
+        elseif tau == true
+            dynsys = ContinuousDynamicalSystem(closed_model_smooth_tau, x0, p)
+        end
     elseif system == "piecewise"
         dynsys = ContinuousDynamicalSystem(closed_model_piecewise, x0, p)
     else
@@ -113,29 +154,55 @@ function cm_eq_nlsolve(x0)
 end
 
 
-function cm_fixed_params(n::Int)
-    d = Dict{Symbol, Float64}(
-        :spwp => 0.3,     #permanent wilting point
-        :ep   => 4.38,    #[mm/day] potential evaporation over land in mm/day, taken from [1]
-        :pt   => 10.0,    #tuning parameter in tanh function
-        :ptot => 3.0,     #[mm/day] average total precipitation rate over the full tropics
-        :eo   => 3.0,     #[mm/day] ocean evaporation rate
-        :ϵ    => 1.0,     #numerical parameter from Rodriguez-Iturbe et al. (1991)
-        :r    => 2.0,     #numerical parameter from Rodriguez-Iturbe et al. (1991)
-        :α    => 0.1,     #land fraction
-        :nZr  => 100.0,   #[mm] reservoir depth/"field storage capacity of the soil"
-        :a    => 15.6,    #numerical parameter from Bretherton et al. (2004)
-        :b    => 0.603,   #numerical parameter from Bretherton et al. (2004)
-        :wsat => 72.0,    #[mm] saturation water vapour pass derived from plots in Bretherton et al. ( 2004)
-        :u    => 5.0 * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
-        :L    => 1000.0 * km2mm(1.0), #[mm] domain size
-    )
+function cm_fixed_params(n::Int,tau=false)
+
+    if tau == false
+
+        d = Dict{Symbol, Float64}(
+            :spwp => 0.3,     #permanent wilting point
+            :ep   => 4.38,    #[mm/day] potential evaporation over land in mm/day, taken from [1]
+            :pt   => 10.0,    #tuning parameter in tanh function
+            :ptot => 3.0,     #[mm/day] average total precipitation rate over the full tropics
+            :eo   => 3.0,     #[mm/day] ocean evaporation rate
+            :ϵ    => 1.0,     #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :r    => 2.0,     #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :α    => 0.1,     #land fraction
+            :nZr  => 100.0,   #[mm] reservoir depth/"field storage capacity of the soil"
+            :a    => 15.6,    #numerical parameter from Bretherton et al. (2004)
+            :b    => 0.603,   #numerical parameter from Bretherton et al. (2004)
+            :wsat => 72.0,    #[mm] saturation water vapour pass derived from plots in Bretherton et al. ( 2004)
+            :u    => 5.0 * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
+            :L    => 1000.0 * km2mm(1.0), #[mm] domain size
+        )
+
+    elseif tau == true
+
+        d = Dict{Symbol, Float64}(
+            :spwp => 0.3,     #permanent wilting point
+            :ep   => 4.38,    #[mm/day] potential evaporation over land in mm/day, taken from [1]
+            :pt   => 10.0,    #tuning parameter in tanh function
+            :ptot => 3.0,     #[mm/day] average total precipitation rate over the full tropics
+            :eo   => 3.0,     #[mm/day] ocean evaporation rate
+            :ϵ    => 1.0,     #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :r    => 2.0,     #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :α    => 0.1,     #land fraction
+            :nZr  => 100.0,   #[mm] reservoir depth/"field storage capacity of the soil"
+            :a    => 15.6,    #numerical parameter from Bretherton et al. (2004)
+            :b    => 0.603,   #numerical parameter from Bretherton et al. (2004)
+            :wsat => 72.0,    #[mm] saturation water vapour pass derived from plots in Bretherton et al. ( 2004)
+            :τ    => 0.5
+        )
+    else
+        println("You have not specified which parameter set to use. For tau-set, give second argument 'true'.")
+    end
+
     d[:sfc] = d[:spwp] + 0.3 #field capacity
     pa = [0.5, 0.7, 0.9]
     d[:pa] = pa[n]     #[mm/day] advected precipitation component
 
     return d
 end
+
 
 function cm_mean_of_bins!(df::DataFrame, param::String, var::String, nb_bins::Int)
     df = sort!(df, param)
@@ -148,11 +215,21 @@ function cm_mean_of_bins!(df::DataFrame, param::String, var::String, nb_bins::In
 
     for bin_end in Iterators.countfrom(bin_size, bin_size)
         bin_end > nb_rows && break
-        df[bin_start:bin_end, col_name] .= mean(df[bin_start:bin_end, var])
+        df[bin_start:bin_end, col_name] .= DataFrames.mean(df[bin_start:bin_end, var])
         bin_start = bin_end+1
     end
     return df[!,col_name]
 end
+
+
+function cm_rolling_average!(df::DataFrame, param::String, var::String, n::Int)
+    df = sort!(df, param)
+    col_name = string("rav_", var)
+    df[!, col_name] = [i < n ? DataFrames.mean(df[begin:i, var]) : DataFrames.mean(df[i-n+1:i, var]) for i in 1:length(df[!,var])]
+    return df[!,col_name]
+end
+
+
 
 function cm_state_space(p::Dict)
     @unpack wsat = p
@@ -165,26 +242,46 @@ end
 
 
 
+function cm_rand_params(tau::Bool=false)
 
+    if tau == false
 
+        d = Dict{Symbol, Float64}(
+            :spwp => rand(Uniform(0.20, 0.54)), #permanent wilting point
+            :ep   => rand(Uniform(4.1, 4.5)),     #[mm/day] potential evaporation over land in mm/day, taken from [1]
+            :eo   => rand(Uniform(2.8, 3.2)),     #[mm/day] ocean evaporation rate
+            :ϵ    => rand(Uniform(0.9, 1.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :r    => 2, #rand(Uniform(1.9, 2.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :α    => rand(Uniform(0.0, 1.0)),       #land fraction
+            :nZr  => rand(Uniform(90.0, 110.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
+            :a    => rand(Uniform(11.4, 15.6)),    #numerical parameter from Bretherton et al. (2004)
+            :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
+            :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
+            :u    => rand(Uniform(5.0, 10.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
+            :L    => 10000.0 * km2mm(1.0), #[mm] domain size
+            :pt   => 10.0, #tuning parameter for tanh function
+        )
+    
+    elseif tau == true
 
-function cm_rand_params()
-
-    d = Dict{Symbol, Float64}(
-        :spwp => rand(Uniform(0.20, 0.54)), #permanent wilting point
-        :ep   => rand(Uniform(4.1, 4.5)),     #[mm/day] potential evaporation over land in mm/day, taken from [1]
-        :eo   => rand(Uniform(2.8, 3.2)),     #[mm/day] ocean evaporation rate
-        :ϵ    => rand(Uniform(0.9, 1.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
-        :r    => 2.0, #rand(Uniform(1.9, 2.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
-        :α    => rand(Uniform(0.0, 1.0)),       #land fraction
-        :nZr  => rand(Uniform(90.0, 110.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
-        :a    => rand(Uniform(11.4, 15.6)),    #numerical parameter from Bretherton et al. (2004)
-        :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
-        :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
-        :u    => rand(Uniform(5.0, 10.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
-        :L    => 1000.0 * km2mm(1.0), #rand(Uniform(500.0, 5000.0)) * km2mm(1.0), #[mm] domain size
-        :pt   => 10.0, #tuning parameter for tanh function
-    )
+        d = Dict{Symbol, Float64}(
+            :spwp => rand(Uniform(0.20, 0.54)),  #permanent wilting point
+            :ep   => rand(Uniform(4.1, 4.5)),    #[mm/day] potential evaporation over land in mm/day, taken from [1]
+            :eo   => rand(Uniform(2.8, 3.2)),    #[mm/day] ocean evaporation rate
+            :ϵ    => rand(Uniform(0.9, 1.1)),    #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :r    => 2, #rand(Uniform(1.9, 2.1)),    #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :α    => rand(Uniform(0.0, 1.0)),    #land fraction
+            :nZr  => rand(Uniform(90.0, 110.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
+            :a    => rand(Uniform(11.4, 15.6)),  #numerical parameter from Bretherton et al. (2004)
+            :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
+            :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
+            :τ    => rand(Uniform( (1.0 * m2mm(1)/s2day(1))/(40000.0 * km2mm(1)), (10.0 * m2mm(1)/s2day(1))/(1000.0 * km2mm(1)) )), #using u_min=1m/s, u_max=10m/s, L_min=1000km, L_max=40000km
+            :pt   => 10.0, #tuning parameter for tanh function
+        )
+    
+    else
+        println("Indicate whether to use L-u parameter set (no input) or tau parameter set (true).")
+    end
 
     d[:sfc] = d[:spwp] + 0.3
 

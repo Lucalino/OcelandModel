@@ -39,7 +39,7 @@ include(srcdir("cm_plotting.jl"))
 # 4  : system solved with DynamicalSystems.jl package with smooth OR piecewise defined E_l
 # 5  : system solved with IntervalRootFinding.jl. Precipitation parametrised, E_l piecewise defined
 
-calc_mode = 4
+calc_mode = 40
 
 
 if calc_mode == 1
@@ -134,8 +134,8 @@ elseif calc_mode == 3
     p3 = cm_fixed_params(1)
 
     tspan3 = (0.0, 100.0)
-    x0 = [0.3, 60.0, 40.0]
-    prob3 = ODEProblem(closed_model_pw, x0, tspan3, p3)
+    x0 = [0.3, 50.0, 55.0]
+    prob3 = ODEProblem(closed_model_smooth, x0, tspan3, p3)
     sol3 = solve(prob3)
 
     st  = sol3.u[1][1]
@@ -143,35 +143,44 @@ elseif calc_mode == 3
     wot = sol3.u[1][3]
 
     for n = 2:length(sol3.t)
-        st  = [st; sol3.u[n][1]]
-        wlt = [wlt; sol3.u[n][2]]
-        wot = [wot; sol3.u[n][3]]
+        global st  = [st; sol3.u[n][1]]
+        global wlt = [wlt; sol3.u[n][2]]
+        global wot = [wot; sol3.u[n][3]]
     end
 
-    cm_t_evolution_plot(st, wlt, wot, sol3.t)
+    f = cm_t_evolution_plot(st, wlt, wot, sol3.t)
 
 
 elseif calc_mode == 4
 
-    function cm_MC_fixedpoints(nb_runs, system)
+    function cm_MC_fixedpoints(nb_runs, system, tau::Bool=false)
 
-        #col_names = [string(el) for el in keys(cm_rand_params())]
-        col_names = [string(el) for el in keys(cm_alphavar_params())]
+        col_names = [string(el) for el in keys(cm_rand_params(tau))]
+        #col_names = [string(el) for el in keys(cm_varalpha_params())]
         col_names = append!(col_names, ["s", "wl", "wo"])
         sol = Array{Float64}(undef, 0, length(col_names))
         x0 = @SVector [0.5, 50.0, 50.0]
 
         for n = 1:nb_runs
-            sol = [sol; cm_eq_fixedpoints(system, x0)]
+            sol = [sol; cm_eq_fixedpoints(system, x0, tau)]
         end
 
         sol_df = DataFrame(sol, col_names)
-        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_variable-α_bunt_eq_MC_fixedpoints_$(nb_runs)_runs.csv"), sol_df)
+
+        if tau == true
+            ps = "tau"
+        else
+            ps = ""
+        end
+
+        #d = Int(round(mean(sol_df.L) .* mm2km(1.0), digits = 1))
+        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_$(ps)_eq_MC_fixedpoints_runs$(nb_runs).csv"), sol_df)
+       # CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_linearised_eq_MC_fixedpoints_runs$(nb_runs)_domain$(d).csv"), sol_df)
         #println(sol_df)
 
     end
 
-    cm_MC_fixedpoints(5000, "smooth")
+    cm_MC_fixedpoints(10000, "smooth", true)
 
     # p = cm_rand_params()
     # x0 = @SVector [0.6, 40.0, 40.0]

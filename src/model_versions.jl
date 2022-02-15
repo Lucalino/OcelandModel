@@ -11,9 +11,25 @@ function closed_model_piecewise(x, p, t)
 end
 
 
+function closed_model_smooth_tau(x, p, t)
+    #This format is required by ContinuousDynamicalSystem.jl algorithm
+    
+    @unpack α, nZr, τ, eo = p
+   
+    ds = (precip(x[2], p) * infiltration(x[1], p) - evap_tanh(x[1], p)) / nZr
+    dwl = evap_tanh(x[1], p) - precip(x[2], p) + (x[3] - x[2]) * τ /α
+    dwo = eo - precip(x[3], p) - (x[3] - x[2]) * τ / (1-α)
+    # ds = 1/(nZr) * (precip(x[2], wsat, a, b) * infiltration(x[1], ϵ, r) - evap_tanh(x[1], spwp, sfc, ep, pt))
+    # dwl = evap_tanh(x[1], spwp, sfc, ep, pt) - precip(x[2], wsat, a, b) + (x[3] - x[2]) * u / (α*L)
+    # dwo = eo - precip(x[3], wsat, a, b) - (x[3] - x[2]) * u / ((1-α) * L)
+    
+    return SVector(ds, dwl, dwo)
+end
+
+
 function closed_model_smooth(x, p, t)
     #This format is required by ContinuousDynamicalSystem.jl algorithm
-   
+
     @unpack α, nZr, u, L, eo = p
    
     ds = (precip(x[2], p) * infiltration(x[1], p) - evap_tanh(x[1], p)) / nZr
@@ -24,6 +40,17 @@ function closed_model_smooth(x, p, t)
     # dwo = eo - precip(x[3], wsat, a, b) - (x[3] - x[2]) * u / ((1-α) * L)
     
     return SVector(ds, dwl, dwo)
+end
+
+
+function closed_model_linearised(x, p, t)
+
+    @unpack α, nZr, u, L, eo = p
+    ds = (lin_precip(x[2], p) * infiltration(x[1], p) - evap_tanh(x[1], p)) / nZr
+    dwl = evap_tanh(x[1], p) - lin_precip(x[2], p) + (x[3] - x[2]) * u / (α*L)
+    dwo = eo - lin_precip(x[3], p) - (x[3] - x[2]) * u / ((1-α) * L)
+    return SVector(ds, dwl, dwo)
+
 end
 
 
@@ -53,6 +80,7 @@ function open_model_v1(x, p, t)
     return SVector(ds, dw1, dw2, dw3)
 end
 
+
 function open_model_v2(x, p, t)
     # This model version is the open analogy to the closed model where we don't track moisture accumulation over space 
     # and instead only consider the mean value for each atmsopheric box. Advection is then this mean value times wind
@@ -70,6 +98,7 @@ function open_model_v2(x, p, t)
     return SVector(ds, dw1, dw2, dw3)
 end
 
+
 function open_model_v2_closed(x, p, t)
     # This model version is the open analogy to the closed model where we don't track moisture accumulation over space 
     # and instead only consider the mean value for each atmsopheric box. Advection is then this mean value times wind
@@ -83,6 +112,24 @@ function open_model_v2_closed(x, p, t)
     dw1 = eo - precip(x[2], p) + (x[4] - x[2]) * u/L1
     dw2 = evap_tanh(x[1], p) - precip(x[3], p) + (x[2] - x[3]) * u/L2
     dw3 = eo - precip(x[4], p) + (x[3] - x[4]) * u/L3
+
+    return SVector(ds, dw1, dw2, dw3)
+end
+
+
+function open_model_v2_closed_linearised(x, p, t)
+    # This model version is the open analogy to the closed model where we don't track moisture accumulation over space 
+    # and instead only consider the mean value for each atmsopheric box. Advection is then this mean value times wind
+    # speed at each boundary. In contrast to the open_model_v2, we "close" the model by setting w0 = w3.
+
+    @unpack L1, L2, L3, nZr, u, eo = p
+
+    # Variable definitions: s = x[1], w1 = x[2], w2 = x[3], w3 = x[4]
+
+    ds  = (lin_precip(x[3], p) * infiltration(x[1], p) - evap_tanh(x[1], p)) / nZr
+    dw1 = eo - lin_precip(x[2], p) + (x[4] - x[2]) * u/L1
+    dw2 = evap_tanh(x[1], p) - lin_precip(x[3], p) + (x[2] - x[3]) * u/L2
+    dw3 = eo - lin_precip(x[4], p) + (x[3] - x[4]) * u/L3
 
     return SVector(ds, dw1, dw2, dw3)
 end

@@ -27,7 +27,7 @@ include(srcdir("utils.jl"))
 include(srcdir("om_analysis.jl"))
 
 
-function om_MC_fixedpoints(nb_runs, system)
+function om_MC_fixedpoints(nb_runs, system, tau::Bool=false)
 
     col_names = [string(el) for el in keys(om_rand_params())]
     col_names = append!(col_names, ["s", "w1", "w2", "w3", "status"])
@@ -39,11 +39,11 @@ function om_MC_fixedpoints(nb_runs, system)
     end
 
     sol_df = DataFrame(sol, col_names)
-    d = Int(round(mean(sol_df.L) .* mm2km(1.0), digits = 1))
-    CSV.write(datadir("sims", "open model pmscan", "om_$(system)_MC_fixedpoints_runs$(nb_runs)_domain$(d).csv"), sol_df)
+    #d = Int(round(mean(sol_df.L) .* mm2km(1.0), digits = 1))
+    CSV.write(datadir("sims", "open model pmscan", "om_$(system)_MC_fixedpoints_runs$(nb_runs)_sym_updatedparams.csv"), sol_df)
 end
 
-#om_MC_fixedpoints(10000, "v2_closed") 
+om_MC_fixedpoints(10000, "v2") 
 
 # p = cm_rand_params()
 # x0 = @SVector [0.6, 40.0, 40.0]

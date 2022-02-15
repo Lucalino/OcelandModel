@@ -30,9 +30,9 @@ function rou(val::Number,d::Integer)
     return round(val, digits=d)
 end
 
-function mean_of_bins!(df::DataFrame, param::String, var::String, nb_bins::Int)
-    df = sort(df, param)
-    col_name = string("mean_",var)
+function mean_of_bins!(df::DataFrame, param::String, var::String, nb_bins::Int, name::String = "μ")
+    df = sort!(df, param)
+    col_name = string(name, "_", param)
     df[!,col_name] .= 1.0
     nb_rows = nrow(df)
     mod(nb_rows, nb_bins) == 0 || error("Number of bins must divide the data set's number of rows")
@@ -41,11 +41,133 @@ function mean_of_bins!(df::DataFrame, param::String, var::String, nb_bins::Int)
 
     for bin_end in Iterators.countfrom(bin_size, bin_size)
         bin_end > nb_rows && break
-        df[bin_start:bin_end, col_name] .= mean(df[bin_start:bin_end, var])
+        df[bin_start:bin_end, col_name] .= DataFrames.mean(df[bin_start:bin_end, var])
         bin_start = bin_end+1
     end
-    return df[!,col_name]
+    return nothing    #df[!,col_name]
 end
+
+function movingaverage(X::Vector, numofele::Int)
+    BackDelta = div(numofele,2) 
+    ForwardDelta = isodd(numofele) ? div(numofele,2) : div(numofele,2) - 1
+    len = length(X)
+    Y = similar(X)
+    for n = 1:len
+        if BackDelta > n-1
+            lo = 1
+            hi = n + (n-1)
+        elseif n + ForwardDelta > len
+            lo = n - (len-n)
+            hi = len 
+        else
+            lo = n - BackDelta
+            hi = n + ForwardDelta
+        end
+        Y[n] = DataFrames.mean(X[lo:hi])
+    end
+    return Y
+end
+
+
+function sensitivity_v1!(df::DataFrame, parameter::String, quantity::String = "PR", nb_bins::Int = 100)
+    
+    #compute μ for the quantity of interest in each bin of parameter values
+    mean_of_bins!(df, parameter, quantity, nb_bins)
+
+    #compute the square of the deviation from the mean for each data point
+    df[:, string("dev^2_μ_", parameter)] = (df[:,quantity] .- df[:,string("μ_", parameter)]).^2
+    
+    #compute variance for each bin
+    mean_of_bins!(df, parameter, string("dev^2_μ_", parameter), nb_bins, "σ^2")
+
+    #compute standard deviation for each bin
+    df[:, string("σ_", parameter)] = sqrt.(df[:, string("σ^2_", parameter)])
+
+    σ_mean = DataFrames.mean(df[:,string("σ_", parameter)])
+
+    return σ_mean
+end
+
+
+function sensitivity_v2!(df::DataFrame, parameter::String, quantity::String = "PR", nb_bins::Int = 100)
+
+    #compute total mean of all data points
+    μtot = DataFrames.mean(df[:, quantity])
+
+    #compute difference between bin means and total mean
+    mean_of_bins!(df, parameter, quantity, nb_bins)
+    df[:, string("Δμ_", parameter)] = abs.(df[:, string("μ_", parameter)] .- μtot)
+    #df[:, string("Δμ_", parameter)] = df[:, string("μ_", parameter)] .- μtot
+    meandiff = DataFrames.mean(df[:, string("Δμ_", parameter)])
+
+    return meandiff
+end
+
+function information_entropy(x::Vector, y::Vector, nb_bins::Int)
+    ds = Dataset(x,y)
+    H = genentropy(ds, VisitationFrequency(RectangularBinning(nb_bins)); q = 1.0, base = 2)
+    return H
+end
+
+function mutual_information(x::Vector, y::Vector, bin_length = 0.1)
+    xnorm = normalise(x)
+    ynorm = normalise(y)
+    Hx  = genentropy(Dataset(xnorm), bin_length)
+    Hy  = genentropy(Dataset(ynorm), bin_length)
+    Hxy = genentropy(Dataset(xnorm,ynorm), bin_length)
+    m = Hx + Hy - Hxy
+    println(m)
+    return m
+end
+
+function bootstrapping(x::Vector, y::Vector, bin_length = 0.1, N::Int = 10000)
+    xnorm = normalise(x)
+    ynorm = normalise(y)
+    null  = zeros(N)
+    Hx  = genentropy(Dataset(xnorm), bin_length)
+    Hy  = genentropy(Dataset(ynorm), bin_length)
+    for i in 1:N
+        shuffle!(xnorm)
+        shuffle!(ynorm)
+        Hxy = genentropy(Dataset(xnorm, ynorm), bin_length)
+        null[i] = Hx + Hy - Hxy
+    end
+    μ = mean(null)
+    std = Statistics.std(null)
+    three_sigma = 3 * std
+    return null, μ, three_sigma
+end
+
+function relative_mi(x::Vector, y::Vector, bin_length = 0.1, N = 10000)
+    mi = mutual_information(x, y)
+    null, μ, three_sigma = bootstrapping(x,y)
+    mi_rel = mi / (μ + three_sigma)
+    return mi_rel
+end
+
+function all_parameter_sensitivities(data::DataFrame, yquant::String, τ = true)
+    if τ == true
+        p = ["α", "b", "ep", "spwp", "nZr", "sfc", "ϵ", "a", "wsat", "τ", "eo"]
+        rmi = zeros(length(p))
+        for i = 1:length(p)
+            rmi[i] = relative_mi(data[:,p[i]], data[:,yquant])
+            println("$(p[i])" * " and " * yquant * " have relative mutual information mi_rel = $(rmi[i]).")
+        end
+    else
+        println("Only implemented for τ dataset so far.")
+    end
+    return DataFrame(pnames = p, MI_rel = rmi)
+end
+
+function normalise(x::Vector)
+    n = length(x)
+    xnorm = zeros(n)
+    for i = 1:n
+        xnorm[i] = (x[i] - minimum(x)) / (maximum(x) - minimum(x))
+    end
+    return xnorm
+end
+
 
 function cm_load_data()
     s1000 = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_eq_MC_fixedpoints_10000_runs_domain1000_all_quantities" * ".csv"), DataFrame)

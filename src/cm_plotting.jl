@@ -4,21 +4,21 @@ function cm_t_evolution_plot(s, wl, wo, t,
                             c1 = "dodgerblue", 
                             c2 = "darkblue",
                             c3 = "darkgreen")
-    fig = Figure()
-    ax1 = Axis(fig[1,1])
-    ax2 = Axis(fig[2,1])
-    ax2.xlabel = "time [s]"
-    ax1.ylabel = "water vapour pass [mm]"
-    ax2.ylabel = "relative soil moisture"
-    ax2.ylabelsize = fs
-    ax2.xlabelsize = fs
-    ax2.ylabelsize = fs
+    fig = Figure(resolution = (1000, 600))
+    ax1 = Axis(fig[1,1], xlabelsize = 28, ylabelsize = 28, yticklabelsize = 20, xticklabelsize = 20)
+    ax2 = Axis(fig[2,1], xlabelsize = 28, ylabelsize = 28, yticklabelsize = 20, xticklabelsize = 20)
+    ax2.xlabel = "t [days]"
+    ax1.ylabel = "w [mm]"
+    ax2.ylabel = "s"
+    #ax2.ylabelsize = fs
+    #ax2.xlabelsize = fs
+    #ax2.ylabelsize = fs
     hidespines!(ax1, :t, :r)
     hidespines!(ax2, :t, :r)
-    lines!(ax1, t, wl, label="w_l", color=c1)
-    lines!(ax1, t, wo, label="w_o", color=c2)
-    lines!(ax2, t, s, color=c3)
-    axislegend(ax1, framevisible = false)
+    lines!(ax1, t, wl, linewidth = 3.0, label="w_l", color=c1)
+    lines!(ax1, t, wo, linewidth = 3.0, label="w_o", color=c2)
+    lines!(ax2, t, s, linewidth = 3.0, color=c3)
+    axislegend(ax1, framevisible = false, labelsize = 28)
     return fig
 end
 
@@ -36,11 +36,11 @@ end
 function cm_parameter_scatter_plots(df::DataFrame, system, idtext, nb_bins = 100)
     ms = 5.0
 
-    x = ["spwp", "sfc", "ϵ", "u", "wsat", "a", "b", "ep", "nZr", "α", "eo"]
-    x_units = ["", "", "", " [m/s]", " [mm]", "", "", " [mm/day]", " [mm]", "", " [mm/day]"]
+    x = ["spwp"]#, "sfc", "ϵ", "τ", "wsat", "a", "b", "ep", "nZr", "α", "eo"]
+    x_units = [""]#, "", "", " [1/day]", " [mm]", "", "", " [mm/day]", " [mm]", "", " [mm/day]"]
     #x = ["u"]
     #x_units = [" [m/s]"]
-    y = ["PR", "Pl", "Po", "El", "infilt", "runoff"] 
+    y = ["PR", "Pl", "Po", "El", "Φ", "R"] 
     y_units = ["", " [mm/day]", " [mm/day]", " [mm/day]", "", " [mm/day]"]
     
     for n = 1:length(x)
@@ -56,22 +56,22 @@ function cm_parameter_scatter_plots(df::DataFrame, system, idtext, nb_bins = 100
         scatter!(ax1, df[!,x[n]], df[!,y[1]], markersize = ms)
         lines!(ax1, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[1],nb_bins), color = :red)
         #lines!(ax1, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[2],nb_bins) ./ cm_mean_of_bins!(df, x[n], y[3], nb_bins), color = :red)
-        hlines!(ax1, mean(df[:,y[1]]), color = :orange)
+        #hlines!(ax1, mean(df[:,y[1]]), color = :orange)
         scatter!(ax2, df[!,x[n]], df[!,y[2]], markersize = ms)
         lines!(ax2, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[2],nb_bins), color = :red)
-        hlines!(ax2, mean(df[:,y[2]]), color = :orange)
+        #hlines!(ax2, mean(df[:,y[2]]), color = :orange)
         scatter!(ax3, df[!,x[n]], df[!,y[3]], markersize = ms)
         lines!(ax3, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[3],nb_bins), color = :red)
-        hlines!(ax3, mean(df[:,y[3]]), color = :orange)
+        #hlines!(ax3, mean(df[:,y[3]]), color = :orange)
         scatter!(ax4, df[!,x[n]], df[!,y[4]], markersize = ms)
         lines!(ax4, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[4],nb_bins), color = :red)
-        hlines!(ax4, mean(df[:,y[4]]), color = :orange)
+        #hlines!(ax4, mean(df[:,y[4]]), color = :orange)
         scatter!(ax5, df[!,x[n]], df[!,y[5]], markersize = ms)
         lines!(ax5, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[5],nb_bins), color = :red)
-        hlines!(ax5, mean(df[:,y[5]]), color = :orange)
+        #hlines!(ax5, mean(df[:,y[5]]), color = :orange)
         scatter!(ax6, df[!,x[n]], df[!,y[6]], markersize = ms)
         lines!(ax6, sort(df, x[n])[!,x[n]], cm_mean_of_bins!(df,x[n],y[6],nb_bins), color = :red)
-        hlines!(ax6, mean(df[:,y[6]]), color = :orange)
+        #hlines!(ax6, mean(df[:,y[6]]), color = :orange)
         
         ax5.xlabel = string(x[n], x_units[n])
         ax6.xlabel = string(x[n], x_units[n])
@@ -90,7 +90,7 @@ function cm_parameter_scatter_plots(df::DataFrame, system, idtext, nb_bins = 100
         hidespines!(ax5, :t, :r)
         hidespines!(ax6, :t, :r)
 
-        supertitle = fig[0, :] = Label(fig, "Domain size = $(round(df[1, "L"], digits = 0)) km", textsize = 22)
+        #supertitle = fig[0, :] = Label(fig, "Domain size = $(round(df[1, "L"], digits = 0)) km", textsize = 22)
 
         save(plotsdir("Closed model","Parameter scatter plots/", system * "/cm_s_10000runs_" * idtext * "_$(x[n])_scatter.png"),fig)
         #return fig
@@ -230,10 +230,12 @@ function simple_scatter_plot(system, domain, df1, df2, x, y, xlabel, ylabel)
     ax  = Axis(fig[1,1])
     hidespines!(ax, :t, :r)
     scatter!(ax, df1[!,x], df1[!,y], color = (:royalblue, 0.6), markersize = 5.0)
+    #lines!(ax, sort(df1, x)[!,x], cm_mean_of_bins!(df1,x,y,100), color = :black)
     #scatter!(ax, df2[!,x], df2[!,y], color = (:chartreuse4, 0.6), markersize = 5.0)
     ax.xlabel = xlabel
     ax.ylabel = ylabel
     #save(plotsdir("Closed model", "Parameter scatter plots/", system * "/cm_10000runs_domain" * domain * "_" * x * "_" * y * ".png"),fig)
+    return fig
 end
 
 function PR_alpha_comp_plot(df1, df2, lb1, lb2, x, y, xlab, ylab, ttl, comp)

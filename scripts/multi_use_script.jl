@@ -15,6 +15,8 @@ include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("model_versions.jl"))
 include(srcdir("cm_analysis.jl"))
+include(srcdir("om_analysis.jl"))
+include(srcdir("cm_plotting.jl"))
 
 
 fs= 20.0 #fontsize
@@ -177,14 +179,33 @@ function cm_load_data()
     return s1000, s10000
 end
 
+function cm_tau_load_data()
+    d = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_tau_eq_MC_fixedpoints_runs10000_all_quantities" * ".csv"), DataFrame)
+    return d
+end
+
 function om_load_data()
     s1000 = CSV.read(datadir("sims", "open model pmscan/om_v2_MC_fixedpoints_runs10000_domain1000_all_quantities" * ".csv"), DataFrame)
+    #s10000 = CSV.read(datadir("sims", "open model pmscan/om_v2_closed_MC_fixedpoints_runs10000_domain10000_all_quantities" * ".csv"), DataFrame)
     s10000 = CSV.read(datadir("sims", "open model pmscan/om_v2_MC_fixedpoints_runs10000_domain10000_all_quantities" * ".csv"), DataFrame)
+
     return s1000, s10000
 end
 
+function load_lin_data()
+    cd = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_linearised_eq_MC_fixedpoints_runs5000_domain10000_all_quantities" * ".csv"), DataFrame)
+    od = CSV.read(datadir("sims", "open model pmscan/om_v2_closed_lin_MC_fixedpoints_runs5000_domain10000_all_quantities" * ".csv"), DataFrame)
+    return cd, od
+end
+
+function load_steprange()
+    d = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_Lvaried_eq_MC_fixedpoints_runs10000_all_quantities" * ".csv"), DataFrame)
+    return d 
+end
+
+
 function p_break()
-    d = Dict{Symbol, Float64}(
+        d = Dict{Symbol, Float64}(
         :spwp => 0.2205204130513438,  #permanent wilting point
         :ep   => 4.179071665580645,   #[mm/day] potential evaporation over land in mm/day, taken from [1]
         :eo   => 3.063503944375833,   #[mm/day] ocean evaporation rate
@@ -205,4 +226,160 @@ function p_break()
         :w0   => 1.1089681429099199,        
     )
     return d
+end
+
+
+function parametrisation_plots()
+    s = collect(0.0:0.01:1.0)
+    w = collect(0.0:0.1:60.0)
+    ep = 4.3
+    pt = 10.0
+    spwp = 0.3
+    sfc = 0.6
+    ϵ = 1.0
+    r = 2.0
+    a = 15.6
+    b = 0.603
+    wsat = 72.0
+    E = [(ep/2 * tanh( pt * (el - (spwp+sfc)/2 ) ) + ep/2) for el in s]
+    R  = [(ϵ * el^r) for el in s]
+    P  = [exp(a*(el / wsat - b)) for el in w]
+
+    f1 = Figure()
+    ax1 = Axis(f1[1,1], xlabel = "Soil moisture saturation s", ylabel = "Evapotranspiration [mm/day]", xlabelsize = 28, ylabelsize = 28)
+    lines!(ax1, s, E, linewidth = 3.0, color = :dodgerblue4)
+    hidespines!(ax1, :t, :r)
+
+    f2 = Figure()
+    ax2 = Axis(f2[1,1], xlabel = "Soil moisture saturation s", ylabel = "Runoff fraction R_f", xlabelsize = 28, ylabelsize = 28)
+    lines!(ax2, s, R, linewidth = 3.0, color = :dodgerblue4)
+    hidespines!(ax2, :t, :r)
+
+    f3 = Figure()
+    ax3 = Axis(f3[1,1], xlabel = "Column water vapour pass w [mm]", ylabel = "Precipitation [mm/day]", xlabelsize = 28, ylabelsize = 28)
+    lines!(ax3, w, P, linewidth = 3.0, color = :dodgerblue4)
+    hidespines!(ax3, :t, :r)
+
+    return f1, f2, f3
+end
+
+
+function smile(df1, df2)
+
+    f = Figure(resolution = (1000, 800))
+    #ax= Axis(f[1,1], xlabel = "Land fraction α", ylabel = "Precipitation ratio PR = Pl/Po", xlabelsize = 28, ylabelsize = 28, yticklabelsize = 20, xticklabelsize = 20)
+    #scatter!(ax, df1.α, df1.PR, markersize = 10.0, color = :dodgerblue3, label = "closed model")
+    #scatter!(ax, df2.α, df2.PR1, markersize = 10.0, color = :chartreuse4, label = "open model, closed version")
+    #lines!(ax, sort(df1, "α")[!,"α"], cm_mean_of_bins!(df1,"α","PR",100), linewidth = 10.0, color = :midnightblue)
+    #lines!(ax, sort(df2, "α")[!,"α"], cm_mean_of_bins!(df2,"α","PR1",100), linewidth = 10.0, color = :darkgreen)
+
+    hlines!(ax, 1.0, color = :grey, linestyle = :dot)
+    axislegend(ax, position = :lb, labelsize = 20)
+    hidespines!(ax, :t, :r)
+    hidedecorations!(ax, ticks = false, ticklabels = false, label = false)
+    return f
+
+end
+
+
+function arbplot2(df1, df2)
+
+    f = Figure(resolution = (1000, 800))
+    ax= Axis(f[1,1], xlabel = "Land fraction α", ylabel = "Precipitation ratio PR = P2/P1", xlabelsize = 28, ylabelsize = 28, yticklabelsize = 20, xticklabelsize = 20, title = "w0 < 40mm", titlesize = 30)
+    scatter!(ax, df1.α, df1.P2divP1, markersize = 10.0, color = (:dodgerblue3, 0.5), label = "L = 1000 km")
+    scatter!(ax, df2.α, df2.P2divP1, markersize = 10.0, color = (:chartreuse4, 0.5), label = "L = 10000 km")
+    #lines!(ax, sort(df1, "α")[!,"α"], cm_mean_of_bins!(df1,"α","P2divP1",200), linewidth = 8.0, color = :midnightblue)
+    #lines!(ax, sort(df2, "α")[!,"α"], cm_mean_of_bins!(df2,"α","P2divP1",199), linewidth = 8.0, color = :darkgreen)
+
+    hlines!(ax, 1.0, color = :grey, linestyle = :dot)
+    axislegend(ax, position = :lb, labelsize = 20, framevisible = false)
+    hidespines!(ax, :t, :r)
+    hidedecorations!(ax, ticks = false, ticklabels = false, label = false)
+    return f
+
+end
+
+
+function arbplot(df, x::String, y::String)
+
+    f = Figure(resolution = (1000, 900))
+    ax= Axis(f[1,1], xlabel = x, ylabel = y, xlabelsize = 38, ylabelsize = 38, yticklabelsize = 30, xticklabelsize = 30)
+    scatter!(ax, df[!,x], df[!,y], markersize = 8.0, color = :chartreuse4) 
+    lines!(ax, sort(df, x)[!,x], cm_mean_of_bins!(df,x,y,100), color = :darkgreen, linewidth = 4.0)
+    #scatter!(ax, df.α, df[!,"PR"], markersize = 8.0, color = (:chocolate, 0.8), label = "Pl/Po_mean") #:chartreuse4
+    #scatter!(ax, df.α, df[!,"PR2"], markersize = 8.0, color = (:dodgerblue3, 0.8), label = "Pl/P(wo_mean)")
+    #scatter!(ax, df.α, df[!,"P3"], markersize = 8.0, color = (:chartreuse4, 0.8), label = "ocean 2")
+    #lines!(ax, sort(df, "α")[!,"α"], cm_mean_of_bins!(df,"α","PR",100), color = :chocolate4, linewidth = 4.0)
+    #lines!(ax, sort(df, "α")[!,"α"], cm_mean_of_bins!(df,"α","PR2",100), color = :navyblue, linewidth = 4.0)
+    #lines!(ax, sort(df, "α")[!,"α"], cm_mean_of_bins!(df,"α","P3",100), color = :darkgreen, linewidth = 4.0)
+    #axislegend(ax, position = :lb, labelsize = 38, framevisible = false)
+    hidespines!(ax, :t, :r)
+    hidedecorations!(ax, ticks = false, ticklabels = false, label = false)
+    return f
+
+end
+
+    
+function no_influx_ocean_plot()
+    wsat = 72.0
+    a = 15.6
+    b = 0.603
+    w = collect(0.0:1.0:72.0)
+    eo = 3.0
+    influx = [eo for elm in w]
+    τ = [0.0864, 0.2160, 0.8640]
+    lfs = 16
+    outflux1 = [(exp.(a .* (elm ./ wsat .- b)) .* τ[1]) for elm in w]
+    fig = Figure(resolution = (900, 500))
+    ax = Axis(fig[1,1], xlabel = "Water vapor pass [mm]", ylabel = "Water flux rates [mm/day]", ylabelsize = lfs, xlabelsize = lfs)
+    hidespines!(ax, :t, :r)
+    lines!(ax, w, influx, label = "evaporative influx")
+    
+    for i=1:3
+        outflux = [(exp.(a.*(elm ./ wsat .- b)).+ elm .* τ[i]) for elm in w]
+        lines!(ax, w, outflux, label = "outflux for τ = $(τ[i]) per day")
+    end
+    xlims!(ax, (0, 40))
+    ylims!(ax, (0, 20))
+    axislegend(ax, position = :lt, framevisible = false, labelsize = 16)
+    return fig
+end
+
+function mean_to_total(d::DataFrame)
+    df = deepcopy(d)
+
+    #Total advected water (needs to be computed with mean value!)
+    df.A01 = df.w0 .* df.u
+    df.A12 = df.w1 .* df.u
+    df.A23 = df.w2 .* df.u
+    df.A34 = df.w3 .* df.u
+    df.A1 = df.A01 .- df.A12
+    df.A2 = df.A12 .- df.A23
+    df.A3 = df.A23 .- df.A34
+    df.Atot = df.A01 .- df.A34
+
+
+    #Total water content
+    df.w1 = df.w1 .* df.L1
+    df.w2 = df.w2 .* df.L2
+    df.w3 = df.w3 .* df.L3
+    df.s  = df.s .* df.L2 .* df.nZr
+
+    #Total precipitation
+    df.P1 = df.P1 .* df.L1
+    df.P2 = df.P2 .* df.L2
+    df.P3 = df.P3 .* df.L3
+    
+    #Total evapo(transpi)ration
+    df.E1 = df.eo .* df.L1
+    df.E2 = df.El .* df.L2
+    df.E3 = df.eo .* df.L3
+
+    #Total runoff
+    df.R = df.R .* df.L2
+
+    #Total precip ratio
+    df.PRtot = df.P2 ./ (df.P1 .+ df.P3)
+
+    return df
 end

@@ -49,6 +49,7 @@ function cm_derived_quantities!(df_name)
     if occursin(r"tau", df_name) == true
         df.A  = (df.wo .- df.wl) .* df.τ ./ df.α
         df.B  = (df.wo .- df.wl) .* df.τ ./ (1.0 .- df.α)
+        df.τ_time = 1 ./ df.τ
 
     elseif occursin(r"tau", df_name) == false
         df.A  = (df.wo .- df.wl) .* df.u ./ (df.α .* df.L)
@@ -248,12 +249,12 @@ function cm_rand_params(tau::Bool=false)
 
         d = Dict{Symbol, Float64}(
             :spwp => rand(Uniform(0.20, 0.54)), #permanent wilting point
-            :ep   => rand(Uniform(4.1, 4.5)),     #[mm/day] potential evaporation over land in mm/day, taken from [1]
+            :ep   => rand(Uniform(2.0, 6.0)),     #[mm/day] potential evaporation over land in mm/day, taken from [1]
             :eo   => rand(Uniform(2.8, 3.2)),     #[mm/day] ocean evaporation rate
             :ϵ    => rand(Uniform(0.9, 1.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
             :r    => 2, #rand(Uniform(1.9, 2.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
             :α    => rand(Uniform(0.0, 1.0)),       #land fraction
-            :nZr  => rand(Uniform(90.0, 110.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
+            :nZr  => rand(Uniform(50.0, 150.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
             :a    => rand(Uniform(11.4, 15.6)),    #numerical parameter from Bretherton et al. (2004)
             :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
             :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
@@ -265,16 +266,16 @@ function cm_rand_params(tau::Bool=false)
     elseif tau == true
 
         d = Dict{Symbol, Float64}(
-            :spwp => rand(Uniform(0.20, 0.54)),  #permanent wilting point
-            :ep   => rand(Uniform(4.1, 4.5)),    #[mm/day] potential evaporation over land in mm/day, taken from [1]
+            :spwp => rand(Uniform(0.20, 0.55)),  #permanent wilting point, taken from Hagemann & Stacke (2015)
+            :ep   => rand(Uniform(2.0, 6.0)),    #[mm/day] potential evaporation over land in mm/day, taken from Entekhabi et al. (1992)
             :eo   => rand(Uniform(2.8, 3.2)),    #[mm/day] ocean evaporation rate
             :ϵ    => rand(Uniform(0.9, 1.1)),    #numerical parameter from Rodriguez-Iturbe et al. (1991)
-            :r    => 2, #rand(Uniform(1.9, 2.1)),    #numerical parameter from Rodriguez-Iturbe et al. (1991)
+            :r    => rand(Uniform(2,6)),         #numerical parameter from Rodriguez-Iturbe et al. (1991) and Entekhabi et al. (1992)
             :α    => rand(Uniform(0.0, 1.0)),    #land fraction
-            :nZr  => rand(Uniform(90.0, 110.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
+            :nZr  => rand(Uniform(50.0, 120.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - taken from Entekhabi et al. (1992)
             :a    => rand(Uniform(11.4, 15.6)),  #numerical parameter from Bretherton et al. (2004)
-            :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
-            :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
+            :b    => rand(Uniform(0.5, 0.6)),    #numerical parameter from Bretherton et al. (2004)
+            :wsat => rand(Uniform(65.0, 80.0)),  #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
             :τ    => rand(Uniform( (1.0 * m2mm(1)/s2day(1))/(40000.0 * km2mm(1)), (10.0 * m2mm(1)/s2day(1))/(1000.0 * km2mm(1)) )), #using u_min=1m/s, u_max=10m/s, L_min=1000km, L_max=40000km
             :pt   => 10.0, #tuning parameter for tanh function
         )
@@ -283,7 +284,7 @@ function cm_rand_params(tau::Bool=false)
         println("Indicate whether to use L-u parameter set (no input) or tau parameter set (true).")
     end
 
-    d[:sfc] = d[:spwp] + 0.3
+    d[:sfc] = d[:spwp] + 0.3 #inferred from Hagemann & Stacke (2015)
 
     return d
 end

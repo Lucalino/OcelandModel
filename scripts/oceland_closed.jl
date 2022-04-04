@@ -39,7 +39,7 @@ include(srcdir("cm_plotting.jl"))
 # 4  : system solved with DynamicalSystems.jl package with smooth OR piecewise defined E_l
 # 5  : system solved with IntervalRootFinding.jl. Precipitation parametrised, E_l piecewise defined
 
-calc_mode = 40
+calc_mode = 4
 
 
 if calc_mode == 1
@@ -174,13 +174,13 @@ elseif calc_mode == 4
         end
 
         #d = Int(round(mean(sol_df.L) .* mm2km(1.0), digits = 1))
-        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_$(ps)_eq_MC_fixedpoints_runs$(nb_runs).csv"), sol_df)
+        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_$(ps)_eq_MC_fixedpoints_runs$(nb_runs)_updated_ranges_20220328-3.csv"), sol_df)
        # CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_linearised_eq_MC_fixedpoints_runs$(nb_runs)_domain$(d).csv"), sol_df)
         #println(sol_df)
 
     end
 
-    cm_MC_fixedpoints(10000, "smooth", true)
+    cm_MC_fixedpoints(3000, "smooth", true)
 
     # p = cm_rand_params()
     # x0 = @SVector [0.6, 40.0, 40.0]

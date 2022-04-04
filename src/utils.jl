@@ -116,8 +116,16 @@ function mutual_information(x::Vector, y::Vector, bin_length = 0.1)
     Hy  = genentropy(Dataset(ynorm), bin_length)
     Hxy = genentropy(Dataset(xnorm,ynorm), bin_length)
     m = Hx + Hy - Hxy
-    println(m)
     return m
+end
+
+function normalise(x::Vector)
+    n = length(x)
+    xnorm = zeros(n)
+    for i = 1:n
+        xnorm[i] = (x[i] - minimum(x)) / (maximum(x) - minimum(x))
+    end
+    return xnorm
 end
 
 function bootstrapping(x::Vector, y::Vector, bin_length = 0.1, N::Int = 10000)
@@ -147,26 +155,22 @@ end
 
 function all_parameter_sensitivities(data::DataFrame, yquant::String, τ = true)
     if τ == true
-        p = ["α", "b", "ep", "spwp", "nZr", "sfc", "ϵ", "a", "wsat", "τ", "eo"]
+        p = ["α", "b", "ep", "spwp", "nZr", "sfc", "ϵ", "a", "wsat", "τ", "eo", "r"]
         rmi = zeros(length(p))
         for i = 1:length(p)
             rmi[i] = relative_mi(data[:,p[i]], data[:,yquant])
-            println("$(p[i])" * " and " * yquant * " have relative mutual information mi_rel = $(rmi[i]).")
+            #println("$(p[i])" * " and " * yquant * " have relative mutual information mi_rel = $(rmi[i]).")
         end
     else
         println("Only implemented for τ dataset so far.")
     end
-    return DataFrame(pnames = p, MI_rel = rmi)
+    #size = size(data)[1]
+    df = DataFrame(pnames = p, MI_rel = rmi)
+    CSV.write(datadir("sims", "mutual information", "rel_mi_cm_50000runs_updated_ranges.csv"), df)
+    return df
 end
 
-function normalise(x::Vector)
-    n = length(x)
-    xnorm = zeros(n)
-    for i = 1:n
-        xnorm[i] = (x[i] - minimum(x)) / (maximum(x) - minimum(x))
-    end
-    return xnorm
-end
+
 
 
 function cm_load_data()

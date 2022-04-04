@@ -46,7 +46,8 @@
      inkscape:window-x="1440"
      inkscape:window-y="25"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg21578" />
+     inkscape:current-layer="svg21578"
+     inkscape:document-rotation="0" />
   <defs
      id="defs1171">
     <marker
@@ -966,42 +967,6 @@
      style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
      d="M 62.25,243 H 363 V 12 H 62.25 Z m 0,0"
      id="path1175" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 75.89844,243 V 12"
-     id="path1177" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 156.32031,243 V 12"
-     id="path1179" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 236.74609,243 V 12"
-     id="path1181" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 317.16796,243 V 12"
-     id="path1183" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 62.25,214.23828 H 363"
-     id="path1185" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 62.25,173.29687 H 363"
-     id="path1187" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 62.25,132.35156 H 363"
-     id="path1189" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 62.25,91.410157 H 363"
-     id="path1191" />
-  <path
-     style="fill:none;stroke:#000000;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-     d="M 62.25,50.464843 H 363"
-     id="path1193" />
   <g
      style="fill:#000000;fill-opacity:1"
      id="g1197">

@@ -1137,6 +1137,48 @@
          d="M 209 12 L 212 12 L 212 244.5 L 209 244.5 Z M 209 12 "
          id="path1244" />
     </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1478">
+      <path
+         d="M 0,0 H 1920 V 1080 H 0 Z"
+         id="path1476" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1488">
+      <path
+         d="m 394.5478,453.8508 h 96.45892 v 40.86649 H 394.5478 Z"
+         id="path1486" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1514">
+      <path
+         d="m 876.6245,527.4002 h 83.90051 v 47.31709 H 876.6245 Z"
+         id="path1512" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1481">
+      <path
+         d="M 0,0 H 1920 V 1080 H 0 Z"
+         id="path1479" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1491">
+      <path
+         d="m 393.943,453.8508 h 99.66863 v 40.86649 H 393.943 Z"
+         id="path1489" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1517">
+      <path
+         d="m 876.6245,527.4002 h 83.90051 v 47.31709 H 876.6245 Z"
+         id="path1515" />
+    </clipPath>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -1145,9 +1187,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.6012937"
-     inkscape:cx="242.87107"
-     inkscape:cy="205.40332"
+     inkscape:zoom="2.8963554"
+     inkscape:cx="408.99937"
+     inkscape:cy="284.14808"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
@@ -1187,38 +1229,6 @@
        style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.352778"
        d="M 18.402584,86.372905 H 127.94009 V 4.3520716 H 18.402584 Z m 0,0"
        id="path1251" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-       d="M 23.381436,86.240613 V 4.2197805"
-       id="path1253" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-       d="M 73.171334,86.240613 V 4.2197805"
-       id="path1255" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-       d="M 122.96123,86.240613 V 4.2197805"
-       id="path1257" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-       d="M 18.402584,82.51302 H 127.94008"
-       id="path1259" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-       d="M 18.402584,65.171787 H 127.94008"
-       id="path1261" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-       d="M 18.402584,47.831932 H 127.94008"
-       id="path1263" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-       d="M 18.402584,30.490701 H 127.94008"
-       id="path1265" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-opacity:0.12"
-       d="M 18.402584,13.149468 H 127.94008"
-       id="path1267" />
     <g
        style="fill:#000000;fill-opacity:1"
        id="g1271"
@@ -2635,5 +2645,95 @@
        d="m 67.725329,76.662199 c 0,0 2.700818,0.534424 5.055671,-5.406323 1.861696,-4.696627 1.915822,-10.112565 1.915822,-10.112565"
        id="path3486"
        sodipodi:nodetypes="csc" />
+    <g
+       id="g1470"
+       transform="matrix(0.35277777,0,0,-0.35277777,-169.80059,288.15151)" />
+    <g
+       id="g1508"
+       transform="matrix(0.10255715,0,0,-0.10255715,3.7359971,113.43449)">
+      <g
+         id="g1510"
+         clip-path="url(#clipPath1514)">
+        <g
+           id="g1516"
+           transform="translate(874.5177,506.0236)">
+          <text
+             transform="matrix(1,0,0,-1,0,39.11145)"
+             style="font-variant:normal;font-weight:normal;font-size:43.8905px;font-family:STIXGeneral;-inkscape-font-specification:STIXGeneral-Regular;writing-mode:lr-tb;fill:#5e5e5e;fill-opacity:1;fill-rule:nonzero;stroke:none"
+             id="text1520"><tspan
+               x="0"
+               y="0"
+               id="tspan1518">Δ</tspan></text>
+        </g>
+        <g
+           id="g1522"
+           transform="translate(874.5177,506.0236)">
+          <text
+             transform="matrix(1,0,0,-1,31.68898,39.11145)"
+             style="font-style:italic;font-variant:normal;font-size:43.8905px;font-family:STIXGeneral;-inkscape-font-specification:STIXGeneral-Italic;writing-mode:lr-tb;fill:#5e5e5e;fill-opacity:1;fill-rule:nonzero;stroke:none"
+             id="text1526"><tspan
+               x="0"
+               y="0"
+               id="tspan1524">E</tspan></text>
+        </g>
+        <g
+           id="g1528"
+           transform="translate(874.5177,484.0783)">
+          <text
+             transform="matrix(1,0,0,-1,56.964,50.08409)"
+             style="font-variant:normal;font-weight:normal;font-size:31.1623px;font-family:STIXGeneral;-inkscape-font-specification:STIXGeneral-Regular;writing-mode:lr-tb;fill:#5e5e5e;fill-opacity:1;fill-rule:nonzero;stroke:none"
+             id="text1532"><tspan
+               x="0 13.836057"
+               y="0"
+               sodipodi:role="line"
+               id="tspan1530">eq</tspan></text>
+        </g>
+      </g>
+    </g>
+    <g
+       id="g1473"
+       transform="matrix(0.24650751,0,0,-0.2374655,-510.53726,439.57451)" />
+    <g
+       id="g1485"
+       transform="matrix(0.1054688,0,0,-0.10160014,-10.873474,113.34379)">
+      <g
+         id="g1487-0"
+         clip-path="url(#clipPath1491)">
+        <g
+           id="g1493"
+           transform="translate(391.8362,426.0236)">
+          <text
+             transform="matrix(1,0,0,-1,0,39.11145)"
+             style="font-variant:normal;font-weight:normal;font-size:43.8905px;font-family:STIXGeneral;-inkscape-font-specification:STIXGeneral-Regular;writing-mode:lr-tb;fill:#5e5e5e;fill-opacity:1;fill-rule:nonzero;stroke:none"
+             id="text1497"><tspan
+               x="0"
+               y="0"
+               id="tspan1495">Δ</tspan></text>
+        </g>
+        <g
+           id="g1499-3"
+           transform="translate(391.8362,426.0236)">
+          <text
+             transform="matrix(1,0,0,-1,31.68898,39.11145)"
+             style="font-style:italic;font-variant:normal;font-size:43.8905px;font-family:STIXGeneral;-inkscape-font-specification:STIXGeneral-Italic;writing-mode:lr-tb;fill:#5e5e5e;fill-opacity:1;fill-rule:nonzero;stroke:none"
+             id="text1503"><tspan
+               x="0"
+               y="0"
+               id="tspan1501">E</tspan></text>
+        </g>
+        <g
+           id="g1505"
+           transform="translate(391.8362,404.0783)">
+          <text
+             transform="matrix(1,0,0,-1,56.964,50.08409)"
+             style="font-variant:normal;font-weight:normal;font-size:31.1623px;font-family:STIXGeneral;-inkscape-font-specification:STIXGeneral-Regular;writing-mode:lr-tb;fill:#5e5e5e;fill-opacity:1;fill-rule:nonzero;stroke:none"
+             id="text1509"><tspan
+               x="0 8.6631165 24.244261 36.117096"
+               y="0"
+               sodipodi:role="line"
+               id="tspan1507">inst</tspan></text>
+        </g>
+      </g>
+    </g>
   </g>
 </svg>

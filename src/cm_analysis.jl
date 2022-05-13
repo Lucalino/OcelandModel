@@ -248,9 +248,9 @@ function cm_rand_params(tau::Bool=false)
     if tau == false
 
         d = Dict{Symbol, Float64}(
-            :spwp => rand(Uniform(0.20, 0.54)), #permanent wilting point
-            :ep   => rand(Uniform(2.0, 6.0)),     #[mm/day] potential evaporation over land in mm/day, taken from [1]
-            :eo   => rand(Uniform(2.8, 3.2)),     #[mm/day] ocean evaporation rate
+            :spwp => rand(Uniform(0.15, 0.54)), #permanent wilting point
+            :ep   => rand(Uniform(4.0, 6.0)),     #[mm/day] potential evaporation over land in mm/day, taken from Entekhabi et al. (1992)
+            :eo   => rand(Uniform(2.5, 3.5)),     #[mm/day] ocean evaporation rate, lower limit from Kumar et al. (2017), lower limit motivated by Zang et al. (1995)
             :ϵ    => rand(Uniform(0.9, 1.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
             :r    => 2, #rand(Uniform(1.9, 2.1)),      #numerical parameter from Rodriguez-Iturbe et al. (1991)
             :α    => rand(Uniform(0.0, 1.0)),       #land fraction
@@ -266,9 +266,9 @@ function cm_rand_params(tau::Bool=false)
     elseif tau == true
 
         d = Dict{Symbol, Float64}(
-            :spwp => rand(Uniform(0.20, 0.55)),  #permanent wilting point, taken from Hagemann & Stacke (2015)
-            :ep   => rand(Uniform(2.0, 6.0)),    #[mm/day] potential evaporation over land in mm/day, taken from Entekhabi et al. (1992)
-            :eo   => rand(Uniform(2.8, 3.2)),    #[mm/day] ocean evaporation rate
+            :spwp => rand(Uniform(0.15, 0.55)),  #permanent wilting point, taken from Hagemann & Stacke (2015)
+            :ep   => rand(Uniform(4.0, 6.0)),    #[mm/day] potential evaporation over land in mm/day, taken from Entekhabi et al. (1992)
+            :eo   => rand(Uniform(2.5, 3.5)),    #[mm/day] ocean evaporation rate, lower limit from Kumar et al. (2017), lower limit motivated by Zang et al. (1995)
             :ϵ    => rand(Uniform(0.9, 1.1)),    #numerical parameter from Rodriguez-Iturbe et al. (1991)
             :r    => rand(Uniform(2,6)),         #numerical parameter from Rodriguez-Iturbe et al. (1991) and Entekhabi et al. (1992)
             :α    => rand(Uniform(0.0, 1.0)),    #land fraction

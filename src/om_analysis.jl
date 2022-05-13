@@ -279,18 +279,18 @@ end
 function om_rand_params()
 
     d = Dict{Symbol, Float64}(
-        :spwp => rand(Uniform(0.20, 0.54)), #permanent wilting point
-        :ep   => rand(Uniform(4.1, 4.5)),   #[mm/day] potential evaporation over land in mm/day, taken from [1]
+        :spwp => rand(Uniform(0.20, 0.55)), #permanent wilting point
+        :ep   => rand(Uniform(2.0, 6.0)),   #[mm/day] potential evaporation over land in mm/day, taken from [1]
         :eo   => rand(Uniform(2.8, 3.2)),   #[mm/day] ocean evaporation rate
         :ϵ    => rand(Uniform(0.9, 1.1)),   #numerical parameter from Rodriguez-Iturbe et al. (1991)
-        :r    => 2.0,                       #numerical parameter from Rodriguez-Iturbe et al. (1991)
+        :r    => rand(Uniform(2,6)),         #numerical parameter from Rodriguez-Iturbe et al. (1991) and Entekhabi et al. (1992)
         :α    => rand(Uniform(0.0, 1.0)),   #land fraction
-        :nZr  => rand(Uniform(90.0, 110.0)),#[mm] reservoir depth/"field storage capacity of the soil" [mm] - NEEDS MORE RESEARCH
+        :nZr  => rand(Uniform(50.0, 120.0)),#[mm] reservoir depth/"field storage capacity of the soil" [mm] - taken from Entekhabi et al. (1992)
         :a    => rand(Uniform(11.4, 15.6)), #numerical parameter from Bretherton et al. (2004)
-        :b    => rand(Uniform(0.522, 0.603)),   #numerical parameter from Bretherton et al. (2004)
-        :wsat => rand(Uniform(40.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
-        :u    => rand(Uniform(0.0, 30.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
-        :L    => rand(Uniform(500.0, 5000.0)) * km2mm(1.0), #[mm] domain size
+        :b    => rand(Uniform(0.5, 0.6)),   #numerical parameter from Bretherton et al. (2004)
+        :wsat => rand(Uniform(65.0, 80.0)), #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
+        :u    => rand(Uniform(0.0, 10.0)) * m2mm(1.0)/s2day(1.0), #[mm/day] wind speed
+        :L    => rand(Uniform(200.0, 2000.0)) * km2mm(1.0), #[mm] domain size
         :pt   => 10.0,                      #tuning parameter for tanh function
     )
 
@@ -299,7 +299,7 @@ function om_rand_params()
     d[:L2]  = d[:α] * d[:L]                 # island length
     d[:L1]  = d[:L]/2 - d[:L2]/2            # length of first ocean [mm], symmetric configuration
     #d[:L1] = (d[:L] - d[:L2])/4             # length of first ocean [mm], asymmetric configuration with 3*L1 = L3
-    #d[:L1] = (d[:L] - d[:L2])*3/4             # length of first ocean [mm], asymmetric configuration with L1 = 3*L3
+    #d[:L1] = (d[:L] - d[:L2])*3/4           # length of first ocean [mm], asymmetric configuration with L1 = 3*L3
     d[:L3]  = d[:L] - d[:L2] - d[:L1]       # length of second ocean [mm]
     d[:τ]   = d[:u]/d[:L]                   # rate of atmospheric transport
 

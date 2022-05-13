@@ -17,7 +17,7 @@ include(srcdir("utils.jl"))
 dcm     = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_tau_eq_MC_fixedpoints_runs50000_updated_ranges_all_quantities" * ".csv"), DataFrame)
 #dcmold  = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_tau_eq_MC_fixedpoints_runs10000_all_quantities" * ".csv"), DataFrame)
 #cmpsens = CSV.read(datadir("sims", "closed model pmscan/cm_tau_10000runs_parameter_sensitivities_MI" * ".csv"), DataFrame)
-#doms = CSV.read(datadir("sims", "open model pmscan/sym/om_v2_MC_fixedpoints_runs10000_sym_all_quantities" * ".csv"), DataFrame)
+dom = CSV.read(datadir("sims", "open model pmscan/om_v2_fixedpoints_runs50000_sym_updatedparams_all_quantities" * ".csv"), DataFrame)
 #domasl = CSV.read(datadir("sims", "open model pmscan/asym/om_v2_MC_fixedpoints_runs10000_asym3L1=L3_all_quantities" * ".csv"), DataFrame)
 #domasr = CSV.read(datadir("sims", "open model pmscan/asym/om_v2_MC_fixedpoints_runs10000_asymL1=3L3_all_quantities" * ".csv"), DataFrame)
 
@@ -32,14 +32,18 @@ function one_tile_plot(data::DataFrame, xquant::String, yquant::String)
     fig = Figure(resolution = (500, 400))
     ax = Axis(fig[1, 1], xlabel = l[xquant], ylabel = l[yquant], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
     scatter!(ax, data[!,xquant], data[!,yquant], markersize = ms, color = c1)
-    #hlines!(ax, 0.43, linewidth = 2.0, linestyle = :dot, color = :grey80)
+    #hlines!(ax, 1.0, linewidth = 2.0, linestyle = :dot, color = :grey80)
     #hlines!(ax, 0.51, linewidth = 2.0, linestyle = :dot, color = :grey80)
     #vlines!(ax, 0.3, linewidth = 2.0, linestyle = :dot, color = :grey80)
     #vlines!(ax, 0.4, linewidth = 2.0, linestyle = :dot, color = :grey80)
-    lines!(ax, sort(data, xquant)[!,xquant], cm_mean_of_bins!(data, xquant, yquant, nb_bins), color = c2)
+    #lines!(ax, sort(data, xquant)[!,xquant], cm_mean_of_bins!(data, xquant, yquant, nb_bins), color = c2)
     #lines!(ax, sort(data, xquant)[!,xquant], cm_rolling_average!(data, xquant, yquant, 50), color = :forestgreen, label = "bin size 50")
     #lines!(ax, sort(data, xquant)[!,xquant], cm_rolling_average!(data, xquant, yquant, nb_bins), color = :blue, label = "bin size 1000")
-    #lines!(ax, sort!(data, xquant)[!,xquant], movingaverage(data[!,yquant], 100))
+    lines!(ax, sort!(data, xquant)[!,xquant], movingaverage(data[!,yquant], 10000), color = c2)
+    #vlines!(ax,0.3)
+    #vlines!(ax,0.4)
+    #hlines!(ax,0.489)
+    #hlines!(ax,0.566)
     #lines!(ax, data[!,xquant], data[!,xquant], linestyle = :dot, color = :orange)
     hidespines!(ax, :t, :r)
     #axislegend(ax, position = :lb, framevisible = false, labelsize = 16)
@@ -262,7 +266,7 @@ function fluxes_plot(data::DataFrame, statevar::String, bin_length::Int = 100, n
     ax = Axis(fig[1, 1], xlabel = fl[statevar], ylabel = L"Mean water fluxes $F_i$ [mm/day]", ylabelsize = lfs, xlabelsize = lfs,
                 xgridcolor = :white, ygridcolor = :white) #title = "bin length: $(bin_length)",
     fluxes = ["eo", "El", "R", "Pl", "Po", "B"]
-    fluxnames = [L"e_\mathrm{o}", L"E_\ell", L"R=A_\ell", L"P_\ell", L"P_\mathrm{o}", L"-A_\mathrm{o}"]
+    fluxnames = [L"E_\mathrm{o}", L"E_\ell", L"R=A_\ell", L"P_\ell", L"P_\mathrm{o}", L"-A_\mathrm{o}"]
     ls = [:solid, :solid, :solid, :solid, :solid, :solid]
 
     # if statevar == "s"
@@ -289,6 +293,7 @@ function fluxes_plot(data::DataFrame, statevar::String, bin_length::Int = 100, n
     #lines!(ax, s, [(4.1/2 * tanh( 10 * (el - 1.38/2 ) ) + 4.1/2) for el in s], linestyle = :dot, color = :green)
     #lines!(ax, w, [exp(15.6*(x / 65.0 - 0.522)) for el in w], linestyle = :dot, color = :blue)
     #lines!(ax, w, [exp(11.4*(el / 80.0 - 0.603)) for el in w], linestyle = :dot, color = :blue)
+    #vlines!(ax, 0.6)
     axislegend(ax, position = :lc, framevisible = false, labelsize = legendfs)
     hidespines!(ax, :t, :r)
     ylims!(ax, (0,3.5))
@@ -296,6 +301,66 @@ function fluxes_plot(data::DataFrame, statevar::String, bin_length::Int = 100, n
 end
 
 function pdf_plots(data::DataFrame, type::String = "kde", norm::Symbol = :pdf)
+    l = full_labels_dict()
+    lfs = 20
+    ms = 5
+    f1 = Figure(resolution = (1100, 400))
+    ax1 = Axis(f1[1, 1], xlabel = l["s"], ylabel = L"\mathrm{Probability}\, \, \mathrm{density}\, \, \mathrm{function}", ylabelsize = lfs, xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    
+    if type == "kde"
+        # density!(data[!,"s"], color = (:darkorange, 0.8))
+        density!(data[!,"s"], color = (:grey30, 0.8), strokearound = true, strokewidth = 1) #(:grey20, 0.8))
+    elseif type == "hist"
+        hist!(ax1, data[!,"s"], bins = 100, normalization = norm, color = (:darkorange, 0.8))
+    end
+
+
+    ax2 = Axis(f1[1,2], xlabel = L"\tilde{s} = \frac{s - s_\mathrm{pwp}}{s_\mathrm{sfc}-s_\mathrm{pwp}}", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    data.sresc = (data.s .- data.spwp) ./ (data.sfc .- data.spwp)
+
+    if type == "kde"
+        density!(data[!,"sresc"], color = (:grey30, 0.8), strokearound = true, strokewidth = 1) # color = (:grey20, 0.8))
+        vlines!(ax2, 0.0, linewidth = 2.0, linestyle = :dot, color = :grey40)
+        vlines!(ax2, 1.0, linewidth = 2.0, linestyle = :dot, color = :grey40)
+    elseif type == "hist"
+        hist!(ax2, data[!,"sresc"], bins = 100, normalization = norm, color = (:darkorange, 0.8))
+    end
+
+    ax3 = Axis(f1[1, 3], xlabel = L"Mean water vapor pass $w$", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    
+    if type == "kde"
+        # density!(data[!,"wo"], color = (colorant" #215cc3", 0.8), label = "ocean")
+        # density!(data[!,"wl"], color = (colorant"#73acd0", 0.8), label = "land")
+        density!(data[!,"wo"], color = (:grey20, 0.8), strokearound = true, strokewidth = 1, label = L"\mathrm{ocean}") # color = (:grey20, 0.8))
+        density!(data[!,"wl"], color = (:grey60, 0.6), strokearound = true, strokewidth = 1, label = L"\mathrm{land}") # color = (:grey50, 0.8))
+
+    elseif type == "hist"
+        hist!(ax3, data[!,"wo"], bins = 100, normalization = norm, label = L"\mathrm{ocean}", color = (colorant" #215cc3", 0.8))
+        hist!(ax3, data[!,"wl"], bins = 100, normalization = norm, label = L"\mathrm{land}", color = (colorant"#73acd0", 0.8))   
+    end
+
+    ax4 = Axis(f1[1,4], xlabel = L"\chi", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+
+    if type == "kde"
+        density!(data[!,"PR"], color = (:grey30, 0.8), strokearound = true, strokewidth = 1)
+    end
+
+    axislegend(ax3, position = :lt, framevisible = false, labelsize = 20)
+    hidespines!(ax1, :t, :r)
+    hidespines!(ax2, :t, :r)
+    hidespines!(ax3, :t, :r)
+    hidespines!(ax4, :t, :r)
+    xlims!(ax3, (8,60))
+
+    colsize!(f1.layout, 1, Relative(3/12))
+    colsize!(f1.layout, 2, Relative(2/12))
+    colsize!(f1.layout, 3, Relative(4/12))
+    colsize!(f1.layout, 4, Relative(3/12))
+
+    return f1
+end
+
+function om_pdf_statevars(data::DataFrame, type::String = "kde", norm::Symbol = :pdf)
     l = full_labels_dict()
     lfs = 20
     ms = 5
@@ -308,7 +373,7 @@ function pdf_plots(data::DataFrame, type::String = "kde", norm::Symbol = :pdf)
     elseif type == "hist"
         hist!(ax1, data[!,"s"], bins = 100, normalization = norm, color = (:darkorange, 0.8))
     end
-
+    xlims!(ax1, (-0.1,1.1))
 
     ax2 = Axis(f1[1,2], xlabel = L"\tilde{s} = \frac{s - s_\mathrm{pwp}}{s_\mathrm{sfc}-s_\mathrm{pwp}}", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
     data.sresc = (data.s .- data.spwp) ./ (data.sfc .- data.spwp)
@@ -320,28 +385,114 @@ function pdf_plots(data::DataFrame, type::String = "kde", norm::Symbol = :pdf)
     elseif type == "hist"
         hist!(ax2, data[!,"sresc"], bins = 100, normalization = norm, color = (:darkorange, 0.8))
     end
+    xlims!(ax2, (-1.4,2.9))
 
     ax3 = Axis(f1[1, 3], xlabel = L"Mean water vapor pass $w$", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
     
     if type == "kde"
         # density!(data[!,"wo"], color = (colorant" #215cc3", 0.8), label = "ocean")
         # density!(data[!,"wl"], color = (colorant"#73acd0", 0.8), label = "land")
-        density!(data[!,"wo"], color = (:grey20, 0.8), label = L"\mathrm{ocean}")
-        density!(data[!,"wl"], color = (:grey50, 0.8), label = L"\mathrm{land}")
+        oce2 = density!(data[!,"w3"], color = (:grey50, 0.5), strokecolor = :grey30, strokewidth = 3.5)
+        land = density!(data[!,"w2"], color = (:grey50, 0.5), strokecolor = :grey30, strokewidth = 2)
+        oce1 = density!(data[!,"w1"], color = (:grey50, 0.5), strokecolor = :grey25, strokewidth = 0.75)
+
 
     elseif type == "hist"
         hist!(ax3, data[!,"wo"], bins = 100, normalization = norm, label = L"\mathrm{ocean}", color = (colorant" #215cc3", 0.8))
         hist!(ax3, data[!,"wl"], bins = 100, normalization = norm, label = L"\mathrm{land}", color = (colorant"#73acd0", 0.8))   
     end
 
-    axislegend(ax3, position = :lt, framevisible = false, labelsize = 20)
+    axislegend(ax3, [oce2, land, oce1], [L"\mathrm{ocean}\, \,  2",  L"\mathrm{land}", L"\mathrm{ocean}\, \,  1"], position = :lt, framevisible = false, labelsize = 20)
     hidespines!(ax1, :t, :r)
     hidespines!(ax2, :t, :r)
     hidespines!(ax3, :t, :r)
-    xlims!(ax3, (2,65))
+    xlims!(ax3, (-10,90))
 
     return f1
 end
+
+function om_pdf_params(data1::DataFrame, label1::LaTeXString, data2::DataFrame, label2::LaTeXString, p::String)
+    l = full_labels_dict()
+    r = ranges_dict()
+    lfs = 20
+    ms = 5
+
+    f = Figure(resolution = (600, 400))
+
+    ax1 = Axis(f[1, 1], xlabel = l[p], xlabelsize = lfs,
+                ylabel = L"\mathrm{Probability}\, \, \mathrm{density}\, \, \mathrm{function}", ylabelsize = lfs,  
+                yticklabelcolor = :grey20,
+                xgridvisible = false, ygridvisible = false)
+    d1 = density!(data2[!,p], color = (:grey20, 0.8))
+
+    ax2 = Axis(f[1,1], yticklabelcolor = :grey50, yaxisposition = :right, xgridvisible = false, ygridvisible = false)
+    d2 = density!(data1[!,p], color = (:grey50, 0.8))
+    hidexdecorations!(ax2)  
+
+    Legend(f[1,2], [d1, d2], [label2, label1], framevisible = false, labelsize = 20)
+    #axislegend(ax1, position = :lt, framevisible = false, labelsize = 20)
+    hidespines!(ax1, :t, :r)
+    hidespines!(ax2, :t, :l, :b)
+    xlims!(ax1, r[p])
+    xlims!(ax2, r[p])
+
+    return f
+end
+
+function om_pdf_w0_alpha_tau(data1::DataFrame, label1::LaTeXString, data2::DataFrame, label2::LaTeXString)
+    l = full_labels_dict()
+    r = ranges_dict()
+    lfs = 20
+    ms = 5
+
+    f = Figure(resolution = (1200, 400))
+
+    ax1 = Axis(f[1, 1], xlabel = l["w0"], xlabelsize = lfs,
+                ylabel = L"\mathrm{Probability}\, \, \mathrm{density}\, \, \mathrm{function}", ylabelsize = lfs,  
+                yticklabelcolor = :grey20,
+                xgridvisible = false, ygridvisible = false)
+    d1 = density!(data2[!,"w0"], color = (:grey20, 0.8))
+
+    ax2 = Axis(f[1,1], yticklabelcolor = :grey50, yaxisposition = :right, xgridvisible = false, ygridvisible = false)
+    d2 = density!(data1[!,"w0"], color = (:grey50, 0.8))
+    hidexdecorations!(ax2)  
+
+    ax3 = Axis(f[1, 2], xlabel = l["α"], xlabelsize = lfs,
+                yticklabelcolor = :grey20,
+                xgridvisible = false, ygridvisible = false)
+    d3 = density!(data2[!,"α"], color = (:grey20, 0.8))
+
+    ax4 = Axis(f[1,2], yticklabelcolor = :grey50, yaxisposition = :right, xgridvisible = false, ygridvisible = false)
+    d4 = density!(data1[!,"α"], color = (:grey50, 0.8))
+    hidexdecorations!(ax4) 
+
+    ax5 = Axis(f[1, 3], xlabel = l["τ"], xlabelsize = lfs,
+                yticklabelcolor = :grey20,
+                xgridvisible = false, ygridvisible = false)
+    d5 = density!(data2[!,"τ"], color = (:grey20, 0.8))
+
+    ax6 = Axis(f[1,3], yticklabelcolor = :grey50, yaxisposition = :right, xgridvisible = false, ygridvisible = false)
+    d6 = density!(data1[!,"τ"], color = (:grey50, 0.8))
+    hidexdecorations!(ax6) 
+    axislegend(ax5, [d1, d2], [label2, label1], framevisible = false, labelsize = 20)
+    #Legend(f[1,3], [d1, d2], [label2, label1], framevisible = false, labelsize = 20)
+    #axislegend(ax1, position = :lt, framevisible = false, labelsize = 20)
+    hidespines!(ax1, :t, :r)
+    hidespines!(ax2, :t, :l, :b)
+    hidespines!(ax3, :t, :r)
+    hidespines!(ax4, :t, :l, :b)
+    hidespines!(ax5, :t, :r)
+    hidespines!(ax6, :t, :l, :b)
+    xlims!(ax1, r["w0"])
+    xlims!(ax2, r["w0"])
+    xlims!(ax3, r["α"])
+    xlims!(ax4, r["α"])
+    xlims!(ax5, r["τ"])
+    xlims!(ax6, r["τ"])
+
+    return f
+end
+
 
 function rescaled_s_pdf_plot(data::DataFrame)
     data.sresc = (data.s .- data.spwp) ./ (data.sfc .- data.spwp)
@@ -362,11 +513,11 @@ function El_plot()
     lfs = 20
     legendfs = 16
     lw = 3.0
-    c = [:grey20, :grey40, :grey60, :grey70]
+    c = [:grey20, :grey60] #[:grey20, :grey40, :grey60, :grey70]
     s = collect(0.0:0.01:1.0)
-    ep = 4.3
-    spwp = [0.2, 0.3, 0.4, 0.5]
-    labls = [L"$s_\mathrm{pwp} = 0.2$", L"$s_\mathrm{pwp} = 0.3$", L"$s_\mathrm{pwp} = 0.4$", L"$s_\mathrm{pwp} = 0.5$"]
+    ep = 4.0
+    spwp = [0.3, 0.4] #[0.2, 0.3, 0.4, 0.5]
+    labls = [L"$s_\mathrm{pwp} = 0.3$", L"$s_\mathrm{pwp} = 0.4$"] #[L"$s_\mathrm{pwp} = 0.2$", L"$s_\mathrm{pwp} = 0.3$", L"$s_\mathrm{pwp} = 0.4$", L"$s_\mathrm{pwp} = 0.5$"]
     fig = Figure(resolution = (500, 400))
     ax = Axis(fig[1,1], xlabel = l["s"], ylabel = l["El"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
 
@@ -374,8 +525,8 @@ function El_plot()
         E = [(ep/2 * tanh( 10.0 * (el - (2*spwp[n]+0.3)/2 ) ) + ep/2) for el in s]
         lines!(ax, s, E, linewidth = lw, color = c[n], label = labls[n])
     end
-    vlines!(ax, 0.43, linewidth = 2.0, linestyle = :dot, color = :grey80)
-    vlines!(ax, 0.51, linewidth = 2.0, linestyle = :dot, color = :grey80)
+    vlines!(ax, 0.489, linewidth = 2.0, linestyle = :dot, color = :grey80)
+    vlines!(ax, 0.566, linewidth = 2.0, linestyle = :dot, color = :grey80)
     hidespines!(ax, :t, :r)
     axislegend(ax, position = :lt, framevisible = false, labelsize = legendfs)
     return fig
@@ -403,6 +554,18 @@ function R_plot()
     hidespines!(ax, :t, :r)
     axislegend(ax, position = :lt, framevisible = false, labelsize = legendfs)
     return fig
+end
+
+function ranges_dict()
+    d = Dict(
+        "α"  => (-0.2, 1.2),
+        "w0" => (-10, 90),
+        "τ"  => (-0.2, 4.5),
+        "PR" => (-0.2, 2.0),
+        "u_ms"=>(-1, 11),
+        "L_km"=>(100, 2100)
+    )
+    return d
 end
 
 function short_labels_dict()
@@ -536,12 +699,19 @@ function full_labels_dict()
         "spwp" => L"Permanent wilting point $s_\mathrm{pwp}$",
         "α"    => L"Land fraction $\alpha$", 
         "r"    => L"Runoff exponent $r$", 
+        "ϵ"    => L"Runoff parameter $\epsilon$",
+        "a"    => L"Precipitation parameter $a$",
+        "b"    => L"Precipitation parameter $b$",
+        "wsat" => L"Saturation water vapor pass $w_\mathrm{sat}$ [mm]",
+        "eo"   => L"Ocean evaporation rate $E_\mathrm{o}$ [mm/day]",
         "PR"   => L"Precipitation ratio $PR$",
         "τ"    => L"Atmospheric transport parameter $\tau$ [1/day]",
+        "u_ms" => L"Wind speed $u$ [m/s]",
         "τ_time" => L"Timescale of atmospheric transport $\tau$ [day]",
         "Atot" => L"Advection rate $A\, \,  \left[10^8\,\mathrm{mm}^2\mathrm{/day}\right]$",
         "s"    => L"Soil moisture saturation $s$",
-        "El"   => L"Evapotranspiration $E_\mathrm{l}$ [mm/day]",
+        "El"   => L"Evapotranspiration $E_\ell$ [mm/day]",
+        "L_km" => L"Full domain length $L$ [km]",
         "L1"   => L"First ocean length $L_1$ [km]",
         "L2"   => L"Land length $L_2$ [km]",
         "L3"   => L"Second ocean length $L_3$ [km]",
@@ -549,20 +719,21 @@ function full_labels_dict()
         "PR12" => L"Precipitation ratio $P_1/P_2$",
         "Δwtot"=> L"Total advection $Δw_\mathrm{tot}$ [mm]",
         "dw"   => L"Moisture difference $w_\mathrm{o}-w_\ell$ [mm]",
-        "w1"   => L"Mean water vapor pass $w_1$ [mm]",
-        "w2"   => L"Mean water vapor pass $w_2$ [mm]",
-        "w3"   => L"Mean water vapor pass $w_3$ [mm]",
+        "w1"   => L"Mean water vapor pass $w_{\mathrm{o},1}$ [mm]",
+        "w2"   => L"Mean water vapor pass $w_{\ell}$ [mm]",
+        "w3"   => L"Mean water vapor pass $w_{\mathrm{o},2}$ [mm]",
+        "mean_wo"=> L"Mean ocean water vapor pass $w_\mathrm{o}$",
         "P1"   => L"Precipitation rate $P_1$ [mm/day]",
         "P2"   => L"Precipitation rate $P_2$ [mm/day]",
         "P3"   => L"Precipitation rate $P_3$ [mm/day]",
         "Po"   => L"Ocean precipitation rate $P_\mathrm{o}$ [mm/day]",
-        "Pl"   => L"Land precipitation rate $P_l$ [mm/day]",
+        "Pl"   => L"Land precipitation rate $P_\ell$ [mm/day]",
         "R"    => L"Runoff rate $R$ [mm/day]",
         "Φ"    => L"Infiltration function $\Phi$",
-        "wl"   => L"Mean land water vapor pass $w_l$ [mm]",
-        "wo"   => L"Mean ocean water vapor pass $w_o$ [mm]",
-        "ep"   => L"Potential ET $e_p$ [mm/day]",
-        "shat" => L"$\hat{s}$ indepdent of $s_{pwp}$ and $s_{fc}$",
+        "wl"   => L"Mean land water vapor pass $w_\ell$ [mm]",
+        "wo"   => L"Mean ocean water vapor pass $w_\mathrm{o}$ [mm]",
+        "ep"   => L"Potential ET $e_\mathrm{p}$ [mm/day]",
+        "shat" => L"$\hat{s}$ indepdent of $s_\mathrm{pwp}$ and $s_\mathrm{fc}$",
         "Ehat" => L"Evapotranspiration $E$ [mm/day]",
         "A"    => L"Land advection rate $A$ [mm/day]",
         "B"    => L"Ocean advection rate $B$ [mm/day]",

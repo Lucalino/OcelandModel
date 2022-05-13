@@ -153,9 +153,13 @@ function relative_mi(x::Vector, y::Vector, bin_length = 0.1, N = 10000)
     return mi_rel
 end
 
-function all_parameter_sensitivities(data::DataFrame, yquant::String, τ = true)
+function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::String, om = false, τ = true)
     if τ == true
-        p = ["α", "b", "ep", "spwp", "nZr", "sfc", "ϵ", "a", "wsat", "τ", "eo", "r"]
+        if om == false
+            p = ["α", "b", "ep", "spwp", "nZr", "sfc", "ϵ", "a", "wsat", "τ", "eo", "r"]
+        else
+            p = ["α", "b", "ep", "spwp", "nZr", "w0", "ϵ", "a", "wsat", "τ", "u", "L", "eo", "r"]
+        end
         rmi = zeros(length(p))
         for i = 1:length(p)
             rmi[i] = relative_mi(data[:,p[i]], data[:,yquant])
@@ -166,7 +170,7 @@ function all_parameter_sensitivities(data::DataFrame, yquant::String, τ = true)
     end
     #size = size(data)[1]
     df = DataFrame(pnames = p, MI_rel = rmi)
-    CSV.write(datadir("sims", "mutual information", "rel_mi_cm_50000runs_updated_ranges.csv"), df)
+    CSV.write(datadir("sims", "mutual information", filename * ".csv"), df)
     return df
 end
 

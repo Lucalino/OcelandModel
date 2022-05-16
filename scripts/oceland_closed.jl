@@ -153,7 +153,7 @@ elseif calc_mode == 3
 
 elseif calc_mode == 4
 
-    function cm_MC_fixedpoints(nb_runs, system, tau::Bool=false)
+    function cm_MC_fixedpoints(nb_runs, system, sim_count::String, tau::Bool=false)
 
         col_names = [string(el) for el in keys(cm_rand_params(tau))]
         #col_names = [string(el) for el in keys(cm_varalpha_params())]
@@ -174,13 +174,17 @@ elseif calc_mode == 4
         end
 
         #d = Int(round(mean(sol_df.L) .* mm2km(1.0), digits = 1))
-        CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_$(ps)_eq_MC_fixedpoints_runs$(nb_runs)_updated_ranges_20220328-3.csv"), sol_df)
+        CSV.write(datadir("sims", "closed model pmscan", "Final runs", "cm_$(system)_$(ps)_eq_MC_fixedpoints_runs$(nb_runs)_updated_ranges_20220328-" * sim_count * ".csv"), sol_df)
        # CSV.write(datadir("sims", "closed model pmscan", "cm_$(system)_linearised_eq_MC_fixedpoints_runs$(nb_runs)_domain$(d).csv"), sol_df)
         #println(sol_df)
 
     end
 
-    cm_MC_fixedpoints(3000, "smooth", true)
+    sim = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+    for i in sim
+        cm_MC_fixedpoints(1000, "smooth", i, true)
+        println("Simulation " * i * " finished.")
+    end
 
     # p = cm_rand_params()
     # x0 = @SVector [0.6, 40.0, 40.0]

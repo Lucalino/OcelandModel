@@ -17,7 +17,6 @@ using CairoMakie
 using Colors
 using CSV
 using DataFrames
-using DifferentialEquations
 using Distributions
 using DynamicalSystems
 using IntervalRootFinding
@@ -180,11 +179,11 @@ elseif calc_mode == 4
 
     end
 
-    sim = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
-    for i in sim
-        cm_MC_fixedpoints(1000, "smooth", i, true)
-        println("Simulation " * i * " finished.")
-    end
+    # sim = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+    # for i in sim
+    #     cm_MC_fixedpoints(1000, "smooth", i, true)
+    #     println("Simulation " * i * " finished.")
+    # end
 
     # p = cm_rand_params()
     # x0 = @SVector [0.6, 40.0, 40.0]

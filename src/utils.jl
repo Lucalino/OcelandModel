@@ -170,7 +170,7 @@ function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::
     end
     #size = size(data)[1]
     df = DataFrame(pnames = p, MI_rel = rmi)
-    CSV.write(datadir("sims", "mutual information", filename * ".csv"), df)
+    CSV.write(datadir("sims", "mutual information", "final", filename * ".csv"), df)
     return df
 end
 

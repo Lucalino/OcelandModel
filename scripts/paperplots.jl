@@ -15,14 +15,17 @@ include(srcdir("cm_analysis.jl"))
 include(srcdir("om_analysis.jl"))
 include(srcdir("utils.jl"))
 
-dcm     = CSV.read(datadir("sims", "closed model pmscan/Final runs/cm_smooth_tau_eq_MC_fixedpoints_runs50000_updated_ranges_final-all_all_quantities" * ".csv"), DataFrame)
-#dcmold   = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_tau_eq_MC_fixedpoints_runs50000_updated_ranges_all_quantities" * ".csv"), DataFrame)
+dcm     = CSV.read(datadir("sims", "closed model pmscan/final/cm_smooth_tau_eq_MC_fixedpoints_runs50000_updated_ranges_final-all_all_quantities" * ".csv"), DataFrame)
+dcmold   = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_tau_eq_MC_fixedpoints_runs50000_updated_ranges_all_quantities" * ".csv"), DataFrame)
 cm_mi   = CSV.read(datadir("sims", "mutual information/final/cm_rel_mi_50000_runs_final" * ".csv"), DataFrame)
 #dcmoldold  = CSV.read(datadir("sims", "closed model pmscan/cm_smooth_tau_eq_MC_fixedpoints_runs10000_all_quantities" * ".csv"), DataFrame)
 #cmpsens = CSV.read(datadir("sims", "closed model pmscan/cm_tau_10000runs_parameter_sensitivities_MI" * ".csv"), DataFrame)
-dom = CSV.read(datadir("sims", "open model pmscan/om_v2_fixedpoints_runs50000_sym_updatedparams_all_quantities" * ".csv"), DataFrame)
+dom = CSV.read(datadir("sims", "open model pmscan/final/om_v2_MC_fixedpoints_runs50000_sym_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
+#domold = CSV.read(datadir("sims", "open model pmscan/om_v2_fixedpoints_runs50000_sym_updatedparams_all_quantities" * ".csv"), DataFrame)
 #domasl = CSV.read(datadir("sims", "open model pmscan/asym/om_v2_MC_fixedpoints_runs10000_asym3L1=L3_all_quantities" * ".csv"), DataFrame)
 #domasr = CSV.read(datadir("sims", "open model pmscan/asym/om_v2_MC_fixedpoints_runs10000_asymL1=3L3_all_quantities" * ".csv"), DataFrame)
+
+### Paper plots ###
 
 #Used for PR(param)-plots and s(spwp) plot
 function one_tile_plot(data::DataFrame, xquant::String, yquant::String)
@@ -110,9 +113,17 @@ function four_tiles_plot(data::DataFrame, yquant::String, xquant1::String, xquan
     c2 = :grey25
     fig = Figure(resolution = (800, 650))
     ax1 = Axis(fig[1, 1], xlabel = l[xquant1], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    text!(L"\mathrm{a})", position = (0.6, 0.2))
+    
     ax2 = Axis(fig[1, 2], xlabel = l[xquant2], xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    text!(L"\mathrm{b})", position = (0, 0.1))
+   
     ax3 = Axis(fig[2, 1], xlabel = l[xquant3], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    text!(L"\mathrm{c})", position = (0.2, 0.1))
+    
     ax4 = Axis(fig[2, 2], xlabel = l[xquant4], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    text!(L"\mathrm{d})", position = (5.5, 0.1))
+    
     scatter!(ax1, data[!,xquant1], data[!,yquant], markersize = ms, color = c1)
     lines!(ax1, sort(data, xquant1)[!,xquant1], cm_mean_of_bins!(data, xquant1, yquant, nb_bins), color = c2)
     #lines!(ax1, sort!(data, xquant1)[!,xquant1], movingaverage(data[:,yquant],10000), color = c2)
@@ -310,7 +321,8 @@ function pdf_plots(data::DataFrame, type::String = "kde", norm::Symbol = :pdf)
     lw = 2.5
     f1 = Figure(resolution = (1100, 400))
     ax1 = Axis(f1[1, 1], xlabel = l["s"], ylabel = L"\mathrm{Probability}\, \, \mathrm{density}\, \, \mathrm{function}", ylabelsize = lfs, xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
-    
+    text!(L"\mathrm{a})", position = (0, 2.5))
+
     if type == "kde"
         # density!(data[!,"s"], color = (:darkorange, 0.8))
         # density!(data[!,"s"], color = (:grey30, 0.8), strokearound = true, strokewidth = 1) #(:grey20, 0.8))
@@ -322,6 +334,7 @@ function pdf_plots(data::DataFrame, type::String = "kde", norm::Symbol = :pdf)
 
     ax2 = Axis(f1[1,2], xlabel = L"\tilde{s} = \frac{s - s_\mathrm{pwp}}{s_\mathrm{sfc}-s_\mathrm{pwp}}", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
     data.sresc = (data.s .- data.spwp) ./ (data.sfc .- data.spwp)
+    text!(L"\mathrm{b})", position = (-1, 4))
 
     if type == "kde"
         # density!(data[!,"sresc"], color = (:white, 0.8), strokearound = true, strokewidth = 1) # color = (:grey20, 0.8))
@@ -333,7 +346,8 @@ function pdf_plots(data::DataFrame, type::String = "kde", norm::Symbol = :pdf)
     end
 
     ax3 = Axis(f1[1, 3], xlabel = L"Mean water vapor pass $w$", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
-    
+    text!(L"\mathrm{c})", position = (10, 0.05))
+
     if type == "kde"
         # density!(data[!,"wo"], color = (colorant" #215cc3", 0.8), label = "ocean")
         # density!(data[!,"wl"], color = (colorant"#73acd0", 0.8), label = "land")
@@ -346,7 +360,8 @@ function pdf_plots(data::DataFrame, type::String = "kde", norm::Symbol = :pdf)
         hist!(ax3, data[!,"wl"], bins = 100, normalization = norm, label = L"\mathrm{land}", color = (colorant"#73acd0", 0.8))   
     end
 
-    ax4 = Axis(f1[1,4], xlabel = L"\chi", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    ax4 = Axis(f1[1,4], xlabel = L"Precipitation ratio $\chi$", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    text!(L"\mathrm{d})", position = (0.2, 17))
 
     if type == "kde"
         #density!(data[!,"PR"], color = (:grey30, 0.8), strokearound = true, strokewidth = 1)
@@ -817,4 +832,32 @@ function titles_dict()
 end
 
 
+### Presentation plots ###
+
+function chi_pdf(data::DataFrame)
+    lfs = 22
+    fig = Figure(resolution = (500, 400))
+    ax = Axis(fig[1, 1], xlabel = L"Precipitation ratio $\chi$", ylabel = L"\mathrm{PDF}", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    lines!(kde(data[!,"PR"]), color = :grey30, linewidth = 2.5, label = L"\mathrm{data}\, \, \mathrm{from}\, \, 50000\, \, \mathrm{runs}")
+    vlines!(ax, mean(dcm.PR), color = :red, linewidth = 1.5, label = L"\chi_\mathrm{mean} \, =\, 0.94")
+    vlines!(ax, 0.9, color = :dodgerblue4, linestyle = :dash, linewidth = 1.5, label = L"\mathrm{observed}\, \, \mathrm{range}")
+    vlines!(ax, 1.04, color = :dodgerblue4, linestyle = :dash, linewidth = 1.5)
+    axislegend(ax, position = :lt, framevisible = false, labelsize = 20)
+    hidespines!(ax, :t, :r)
+    return fig
+end
+
+function chi_param(data::DataFrame, xquant::String, yquant::String = "PR")
+    l = full_labels_dict()
+    lfs = 22
+    ms = 5
+    c1 = (:grey35, 0.8)
+    fig = Figure(resolution = (500, 400))
+    ax = Axis(fig[1, 1], xlabel = l[xquant], ylabel = l[yquant], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    scatter!(ax, data[!,xquant], data[!,yquant], markersize = ms, color = c1, label = L"\mathrm{data}\, \, \mathrm{from}\, \, 50000\, \, \mathrm{runs}")
+    lines!(ax, sort!(data, xquant)[!,xquant], movingaverage(data[!,yquant], 10000), color = :orange, label = L"\mathrm{mean}")
+    hidespines!(ax, :t, :r)
+    #axislegend(ax, position = :rb, framevisible = false, labelsize = 20)
+    return fig
+end
 

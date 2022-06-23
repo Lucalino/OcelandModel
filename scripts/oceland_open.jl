@@ -16,7 +16,6 @@ using BenchmarkTools
 using CairoMakie
 using CSV
 using DataFrames
-using DifferentialEquations
 using Distributions
 using DynamicalSystems
 using StaticArrays
@@ -40,10 +39,11 @@ function om_MC_fixedpoints(nb_runs, system, tau::Bool=false)
 
     sol_df = DataFrame(sol, col_names)
     #d = Int(round(mean(sol_df.L) .* mm2km(1.0), digits = 1))
-    CSV.write(datadir("sims", "open model pmscan", "om_$(system)_MC_fixedpoints_runs$(nb_runs)_sym_updatedparams-5.csv"), sol_df)
+    return sol_df
+    #CSV.write(datadir("sims", "open model pmscan", "om_$(system)_MC_fixedpoints_runs$(nb_runs)_sym_updatedparams-5.csv"), sol_df)
 end
 
-om_MC_fixedpoints(600, "v2") 
+#om_MC_fixedpoints(10000, "v2") 
 
 # p = cm_rand_params()
 # x0 = @SVector [0.6, 40.0, 40.0]

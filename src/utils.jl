@@ -128,7 +128,7 @@ function normalise(x::Vector)
     return xnorm
 end
 
-function bootstrapping(x::Vector, y::Vector, bin_length = 0.1, N::Int = 10000)
+function bootstrapping(x::Vector, y::Vector, bin_length = 0.1, N::Int = 1000)
     xnorm = normalise(x)
     ynorm = normalise(y)
     null  = zeros(N)
@@ -146,7 +146,7 @@ function bootstrapping(x::Vector, y::Vector, bin_length = 0.1, N::Int = 10000)
     return null, μ, three_sigma
 end
 
-function relative_mi(x::Vector, y::Vector, bin_length = 0.1, N = 10000)
+function relative_mi(x::Vector, y::Vector, bin_length = 0.1, N = 1000)
     mi = mutual_information(x, y)
     null, μ, three_sigma = bootstrapping(x,y)
     mi_rel = mi / (μ + three_sigma)
@@ -156,7 +156,7 @@ end
 function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::String, om = false, τ = true)
     if τ == true
         if om == false
-            p = ["α", "b", "ep", "spwp", "nZr", "sfc", "ϵ", "a", "wsat", "τ", "eo", "r"]
+            p = ["α", "b", "ep", "spwp", "nZr", "ϵ", "a", "wsat", "τ", "eo", "r"]
         else
             p = ["α", "b", "ep", "spwp", "nZr", "w0", "ϵ", "a", "wsat", "τ", "u", "L", "eo", "r"]
         end

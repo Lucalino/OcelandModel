@@ -121,6 +121,7 @@ end
 function om_fixedpoints(x0, system)
 
     p = om_rand_params()
+
     if system == "v1"
         dynsys = ContinuousDynamicalSystem(open_model_v1, x0, p)
     elseif system == "v2"

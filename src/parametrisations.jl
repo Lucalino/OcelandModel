@@ -27,7 +27,7 @@ Compute the evaporation rate of a land domain.
 Input parameters are relative soil moisture saturation s and its values for the permanent wilting point, spwp, and field capacity, sfc,
 and potential evaporation, Ep. 
 """
-function land_evap(s, p::Dict{Symbol, Float64})     
+function El_piecewise(s, p::Dict{Symbol, Float64})     
     @unpack spwp, sfc, ep = p
 
     if s < spwp
@@ -41,20 +41,6 @@ function land_evap(s, p::Dict{Symbol, Float64})
     end
 
 end
-# function land_evap(s::Float64, p::Dict)     
-#     @unpack spwp, sfc, ep = p
-
-#     if s < spwp
-#         return 0.0
-
-#     elseif s > sfc
-#         return ep
-
-#     else
-#         return ep/(sfc-spwp)*(s-spwp)
-#     end
-
-# end
 
 
 function land_evap_dry()
@@ -77,7 +63,7 @@ Smooth parametrisation of land evapotranspiration that takes three parameters
 A = Ep/2, B = tuning_parameter and C = (spwp + sfc)/2 in the form of a dictionary.
 
 """
-function evap_tanh(s, p::Dict{Symbol, Float64})
+function El_tanh(s, p::Dict{Symbol, Float64})
     @unpack spwp, sfc, ep, pt = p
     return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
 end

@@ -209,16 +209,5 @@ function precip_diff(w::Number,w_sat::Number,a::Number,b::Number)
 end
 
 
-# Fake linear parametrisations of El(s) and P(w)
-
-function lin_evap(s, p::Dict{Symbol, Float64})
-    @unpack ep = p
-    return ep * s
-end
-
-function lin_precip(w, p::Dict{Symbol, Float64})
-    @unpack wsat = p
-    return 40.0 / wsat * w
-end
 
 

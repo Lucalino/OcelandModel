@@ -13,7 +13,7 @@ using Random
 using StaticArrays
 include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
-include(srcdir("closed_model.jl"))
+include(srcdir("model.jl"))
 include(srcdir("model_versions.jl"))
 include(srcdir("sensitivity_analysis.jl"))
 
@@ -29,8 +29,6 @@ or with u and L individually (tau = false).
 The function returns a DataFrame with parameter values and corresponding equilibrium
 values for soil moisture s and land and ocean water vapor passes.
 """
-
-
 function cm_compute_EQ_data(nb_runs::Int, tau::Bool=true)
 
     col_names = [string(el) for el in keys(cm_rand_params(tau))]

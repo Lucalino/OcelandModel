@@ -1,28 +1,20 @@
 using DrWatson
 @quickactivate "Oceland Model"
-
 using CairoMakie
 using DataFrames
 using CSV
 using LaTeXStrings
 using Colors
 using Statistics
-using DynamicalSystems
-using Random
 using KernelDensity
-
-include(srcdir("closed_model.jl"))
-include(srcdir("om_analysis.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("figure_labels.jl"))
 
-#Data
+
 dcm     = CSV.read(datadir("sims", "closed model/final/cm_smooth_tau_fixedpoints_runs100000_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
-cm_mi   = CSV.read(datadir("sims", "mutual information/final/cm_rel_mi_100000_runs_final" * ".csv"), DataFrame)
+dcm_mi   = CSV.read(datadir("sims", "mutual information/final/cm_rel_mi_100000_runs_final" * ".csv"), DataFrame)
 dom     = CSV.read(datadir("sims", "open model/final/om_v2_sym_fixedpoints_runs100000_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
 
-
-#Figures
 
 function fig_two(data::DataFrame = dcm)
     l = full_labels_dict()
@@ -84,7 +76,7 @@ function fig_three(data::DataFrame = dcm, statevar::String = "s", window_length:
     return fig
 end
 
-function fig_four(rel_mi_data::DataFrame = cm_mi)
+function fig_four(rel_mi_data::DataFrame = dcm_mi)
     sort!(rel_mi_data, "MI_rel", rev = true)
     l = short_labels_dict()
     n = nrow(rel_mi_data)

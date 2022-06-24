@@ -13,7 +13,7 @@ using Random
 include(srcdir("model_versions.jl"))
 include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
-include(srcdir("model.jl"))
+include(srcdir("create_model_output.jl"))
 
 """
     om_compute_EQ_data(nb_runs::Int, model_version::String)

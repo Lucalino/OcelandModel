@@ -13,7 +13,7 @@ using Random
 using StaticArrays
 include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
-include(srcdir("model.jl"))
+include(srcdir("create_model_output.jl"))
 include(srcdir("model_versions.jl"))
 include(srcdir("sensitivity_analysis.jl"))
 

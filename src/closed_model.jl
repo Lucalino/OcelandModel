@@ -1,9 +1,9 @@
 """
     cm_derived_quantities!(df::DataFrame)
 
-Compute P1, P2, P3, El, infilt, runoff and PR from the equilibrium solutions for s, wl and wo 
-in a DataFrame and return them as new columns of the input DataFrame.
-The input dataframe also needs to contain values for the relevant parameter.
+Take a dataframe with closed model equilibrium solutions and corresponding aprameter values and
+compute P1, P2, P3, El, infilt, runoff, PR (χ) and some other quantities from the equilibrium 
+solutions for s, wl and wo and return them as new columns of the input DataFrame.
 """
 function cm_derived_quantities!(df_name)
 
@@ -37,44 +37,16 @@ function cm_derived_quantities!(df_name)
     df.lblc = df.El .- df.Pl .+ df.A
     df.oblc = df.eo .- df.Po .- df.B
 
-    CSV.write(datadir("sims", df_name * "_all_quantities.csv"), df)
+    #CSV.write(datadir("sims", df_name * "_all_quantities.csv"), df)
     return df
 end
 
-function cm_derived_quantities_lin!(df_name)
-
-    df = CSV.read(datadir("sims", df_name * ".csv"), DataFrame)
-    
-    df.Pl = 40.0 ./ df.wsat .* df.wl
-    df.Po = 40.0 ./ df.wsat .* df.wo
-    df.Ptot = df.α .* df.Pl .+ (1 .- df.α) .* df.Po
-    df.El = df.ep./2 .* tanh.(df.pt .* (df.s .- (df.spwp .+ df.sfc)./2 ) ) .+ df.ep ./ 2
-    df.Φ = 1 .- df.ϵ .* df.s.^df.r
-    df.R = (1 .- df.Φ) .* df.Pl
-    df.PR = df.Pl ./ df.Po
-    df.dw = df.wo .- df.wl
-    df.A  = (df.wo .- df.wl) .* df.u ./ (df.α .* df.L)
-    df.B  = (df.wo .- df.wl) .* df.u ./ ((1.0 .- df.α) .* df.L)
-    df.sblc = (df.Pl .* df.Φ .- df.El) ./ df.nZr
-    df.lblc = df.El .- df.Pl .+ df.A
-    df.oblc = df.eo .- df.Po .- df.B
-
-    #convert to better units
-    df.Lkm = df.L .* mm2km(1.0)
-    df.Likm = df.α .* df.Lkm
-    df.ums = df.u .* (mm2m(1.0) ./ day2s(1.0))
-    CSV.write(datadir("sims", df_name * "_all_quantities.csv"), df)
-    return df
-end
-
-
-#MAIN SOLVER FUNCTION
-function cm_fixedpoints(x0, tau::Bool)
+function cm_equilibrium_solution(x0, tau::Bool)
     
     p = cm_rand_params(tau) 
 
     if tau == true
-        dynsys = ContinuousDynamicalSystem(closed_model_tau, x0, p)
+        dynsys = ContinuousDynamicalSystem(closed_model_τ, x0, p)
     elseif tau == false
         dynsys = ContinuousDynamicalSystem(closed_model_uL, x0, p)
     end
@@ -99,28 +71,6 @@ function cm_fixedpoints(x0, tau::Bool)
     return solrow
 end
 
-
-function cm_eq_nlsolve(x0)
-
-    p = cm_rand_params()    
-    system = (F, x) -> f!(F, x, p)    
-    solution = nlsolve(system, x0)    
-    sol_vec = transpose(solution.zero)
-    p_vals = transpose(collect(values(p)))
-    
-    if converged(solution) == true
-        convergence = 1
-    else
-        convergence = 0
-    end
-
-    sol_row = [p_vals sol_vec convergence]
-
-    return sol_row
-end
-
-
-#modified, not tested
 function cm_fixed_params(tau=true)
 
     d = Dict{Symbol, Float64}(
@@ -150,19 +100,6 @@ function cm_fixed_params(tau=true)
 
     return d
 end
-
-
-
-function cm_state_space(p::Dict)
-    @unpack wsat = p
-    s_range = interval(0.0,1.0)
-    wl_range = interval(0.0,wsat) 
-    wo_range = interval(0.0,wsat)
-    box = s_range × wl_range × wo_range
-    return box
-end
-
-
 
 function cm_rand_params(tau::Bool=true)
 
@@ -210,5 +147,18 @@ function cm_rand_params(tau::Bool=true)
 
     return d
 end
+
+function cm_state_space(p::Dict)
+    @unpack wsat = p
+    s_range = interval(0.0,1.0)
+    wl_range = interval(0.0,wsat) 
+    wo_range = interval(0.0,wsat)
+    box = s_range × wl_range × wo_range
+    return box
+end
+
+
+
+
 
 

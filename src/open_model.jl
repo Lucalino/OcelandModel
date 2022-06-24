@@ -41,49 +41,7 @@ function om_derived_quantities!(df_name)
     dfclean.L3_km = dfclean.L3 .* mm2km(1.0)
     dfclean.u_ms = dfclean.u .* (mm2m(1.0) ./ day2s(1.0))
     
-    CSV.write(datadir("sims", df_name * "_all_quantities.csv"), dfclean)
-    return dfclean
-end
-
-function om_derived_quantities_lin!(df_name)
-
-    df = CSV.read(datadir("sims", df_name * ".csv"), DataFrame)
-
-    #remove parameter sets for which no fixed point was found
-    dfclean = df[(df.s .> 0.0) .| (df.w1 .> 0.0) .| (df.w2 .> 0.0) .| (df.w3 .> 0.0), : ]
-    
-    #compute derived quantities
-    dfclean.wo_mean = (dfclean.w1 .+ dfclean.w3) ./ 2 
-    dfclean.P1 = 40.0 ./ dfclean.wsat .* dfclean.w1
-    dfclean.P2 = 40.0 ./ dfclean.wsat .* dfclean.w2
-    dfclean.P3 = 40.0 ./ dfclean.wsat .* dfclean.w3
-    dfclean.Po1 = (dfclean.P1 .+ dfclean.P3) ./ 2
-    dfclean.Po2 = 40.0 ./ dfclean.wsat .* dfclean.wo_mean
-    dfclean.Ptot = dfclean.α .* dfclean.P2 .+ dfclean.L1 ./ dfclean.L .* dfclean.P1 .+ dfclean.L3 ./ dfclean.L .* dfclean.P3
-    dfclean.El = dfclean.ep ./2 .* tanh.(dfclean.pt .* (dfclean.s .- (dfclean.spwp .+ dfclean.sfc)./2 ) ) .+ dfclean.ep ./ 2
-    dfclean.Φ  = 1 .- dfclean.ϵ .* dfclean.s.^dfclean.r
-    dfclean.R  = (1 .- dfclean.Φ) .* dfclean.P2
-    dfclean.PR1 = dfclean.P2 ./ dfclean.Po1
-    dfclean.PR2 = dfclean.P2 ./ dfclean.Po2
-    dfclean.ds  = (dfclean.P2 .* dfclean.Φ .- dfclean.El) ./ dfclean.nZr
-    dfclean.dw1 = dfclean.eo .- dfclean.P1 .+ (dfclean.w3 .- dfclean.w1) .* dfclean.u ./ dfclean.L1
-    dfclean.dw2 = dfclean.El .- dfclean.P2 .+ (dfclean.w1 .- dfclean.w2) .* dfclean.u ./ dfclean.L2
-    dfclean.dw3 = dfclean.eo .- dfclean.P3 .+ (dfclean.w2 .- dfclean.w3) .* dfclean.u ./ dfclean.L3
-
-    
-    if occursin(r"v2_closed", df_name) == true
-        dfclean = select!(dfclean, Not(:w0))
-        dfclean.wo = (dfclean.L1 .* dfclean.w1 + dfclean.L3 .* dfclean.w3) ./ (dfclean.L1 .+ dfclean.L3)
-    end
-
-    #convert to better units
-    dfclean.L = dfclean.L .* mm2km(1.0)
-    dfclean.L1 = dfclean.L1 .* mm2km(1.0)
-    dfclean.L2 = dfclean.L2 .* mm2km(1.0)
-    dfclean.L3 = dfclean.L3 .* mm2km(1.0)
-    dfclean.u = dfclean.u .* (mm2m(1.0) ./ day2s(1.0))
-    
-    CSV.write(datadir("sims", df_name * "_all_quantities.csv"), dfclean)
+    #CSV.write(datadir("sims", df_name * "_all_quantities.csv"), dfclean)
     return dfclean
 end
 
@@ -118,20 +76,18 @@ function derived_quantities_old!(df::DataFrame)
 end
 
 
-function om_fixedpoints(x0, system)
+function om_equilibrium_solution(x0, model_version)
 
     p = om_rand_params()
 
-    if system == "v1"
-        dynsys = ContinuousDynamicalSystem(open_model_v1, x0, p)
-    elseif system == "v2"
-        dynsys = ContinuousDynamicalSystem(open_model_v2, x0, p)
-    elseif system == "v2_closed"
-        dynsys = ContinuousDynamicalSystem(open_model_v2_closed, x0, p)
-    elseif system == "v2_closed_lin"
-        dynsys = ContinuousDynamicalSystem(open_model_v2_closed_linearised, x0, p)
+    if model_version == "paper"
+        dynsys = ContinuousDynamicalSystem(open_model_v_paper, x0, p)
+    elseif model_version == "closed" 
+        dynsys = ContinuousDynamicalSystem(open_model_closed, x0, p)
+    elseif model_version == "w_tracked"
+        dynsys = ContinuousDynamicalSystem(open_model_w_tracked, x0, p)
     else
-        println("Assign valid system name: v1, v2, v2_closed or v2_closed_lin")
+        error("Assign valid model_version name: paper, closed or w_tracked.")
     end
     box = om_state_space(p)
     fp, eigs, stable = fixedpoints(dynsys, box)

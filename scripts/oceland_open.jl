@@ -23,10 +23,10 @@ using Random
 include(srcdir("model_versions.jl"))
 include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
-include(srcdir("om_analysis.jl"))
+include(srcdir("open_model.jl"))
 
 
-function om_MC_fixedpoints(nb_runs, system, tau::Bool=false)
+function om_compute_EQ_data(nb_runs, model_version, tau::Bool=false)
 
     col_names = [string(el) for el in keys(om_rand_params())]
     col_names = append!(col_names, ["s", "w1", "w2", "w3", "status"])
@@ -34,7 +34,7 @@ function om_MC_fixedpoints(nb_runs, system, tau::Bool=false)
     x0 = @SVector [0.5, 50.0, 50.0, 50.0]
 
     for n = 1:nb_runs
-        sol = [sol; om_fixedpoints(x0, system)]
+        sol = [sol; om_equilibrium_solution(x0, model_version)]
     end
 
     sol_df = DataFrame(sol, col_names)
@@ -43,15 +43,4 @@ function om_MC_fixedpoints(nb_runs, system, tau::Bool=false)
     #CSV.write(datadir("sims", "open model pmscan", "om_$(system)_MC_fixedpoints_runs$(nb_runs)_sym_updatedparams-5.csv"), sol_df)
 end
 
-#om_MC_fixedpoints(10000, "v2") 
-
-# p = cm_rand_params()
-# x0 = @SVector [0.6, 40.0, 40.0]
-# dynsys = ContinuousDynamicalSystem(closed_model_smooth, x0, p)
-# diffeq = (alg = Vern9(), adaptive = false, dt = 0.001, reltol = 1e-8, abstol = 1e-8)
-# sg  = range(0.0, 1.0; length = 100)
-# wlg = wog = range(0.0, p[:wsat]; length = 100)
-# basins, attractors = basins_of_attraction((sg, wlg, wog), dynsys)
-#fig = cm_basins_plot(basins[1,:,:], wlg, wog)
-
-#@btime closed_model_smooth($(x0), $params, 0.0)  
+#om_compute_EQ_data(10000, "v2") 

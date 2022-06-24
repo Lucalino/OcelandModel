@@ -67,9 +67,6 @@ function El_tanh(s, p::Dict{Symbol, Float64})
     @unpack spwp, sfc, ep, pt = p
     return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
 end
-# function evap_tanh(s, spwp, sfc, ep, pt)
-#     return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
-# end
 
 
 

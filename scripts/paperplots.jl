@@ -16,9 +16,9 @@ include(srcdir("om_analysis.jl"))
 include(srcdir("utils.jl"))
 
 #Data
-dcm     = CSV.read(datadir("sims", "closed model pmscan/final/cm_smooth_tau_fixedpoints_runs100000_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
+dcm     = CSV.read(datadir("sims", "closed model/final/cm_smooth_tau_fixedpoints_runs100000_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
 cm_mi   = CSV.read(datadir("sims", "mutual information/final/cm_rel_mi_100000_runs_final" * ".csv"), DataFrame)
-dom     = CSV.read(datadir("sims", "open model pmscan/final/om_v2_sym_fixedpoints_runs100000_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
+dom     = CSV.read(datadir("sims", "open model/final/om_v2_sym_fixedpoints_runs100000_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
 
 
 #Figures
@@ -117,13 +117,13 @@ function fig_five(data::DataFrame = dcm, yquant::String = "PR", xquant1::String 
     ax4 = Axis(fig[2, 2], xlabel = l[xquant4], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
         
     scatter!(ax1, data[!,xquant1], data[!,yquant], markersize = ms, color = c1)
-    lines!(ax1, sort(data, xquant1)[!,xquant1], cm_mean_of_bins!(data, xquant1, yquant, nb_bins), color = c2)
+    lines!(ax1, sort(data, xquant1)[!,xquant1], mean_of_bins!(data, xquant1, yquant, nb_bins), color = c2)
     scatter!(ax2, data[!,xquant2], data[!,yquant], markersize = ms, color = c1)
-    lines!(ax2, sort(data, xquant2)[!,xquant2], cm_mean_of_bins!(data, xquant2, yquant, nb_bins), color = c2)
+    lines!(ax2, sort(data, xquant2)[!,xquant2], mean_of_bins!(data, xquant2, yquant, nb_bins), color = c2)
     scatter!(ax3, data[!,xquant3], data[!,yquant], markersize = ms, color = c1)
-    lines!(ax3, sort(data, xquant3)[!,xquant3], cm_mean_of_bins!(data, xquant3, yquant, nb_bins), color = c2)
+    lines!(ax3, sort(data, xquant3)[!,xquant3], mean_of_bins!(data, xquant3, yquant, nb_bins), color = c2)
     scatter!(ax4, data[!,xquant4], data[!,yquant], markersize = ms, color = c1)
-    lines!(ax4, sort(data, xquant4)[!,xquant4], cm_mean_of_bins!(data, xquant4, yquant, nb_bins), color = c2)
+    lines!(ax4, sort(data, xquant4)[!,xquant4], mean_of_bins!(data, xquant4, yquant, nb_bins), color = c2)
     hidespines!(ax1, :t, :r)
     hidespines!(ax2, :t, :r)
     hidespines!(ax3, :t, :r)
@@ -143,9 +143,9 @@ function fig_six(data::DataFrame = dcm, param::String = "α", quant1::String = "
     ax1 = Axis(fig[1, 1], xlabel = l[param], ylabel = l[quant1], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
     ax2 = Axis(fig[1, 2], xlabel = l[param], ylabel = l[quant2], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
     scatter!(ax1, data[!,param], data[!,quant1], markersize = ms, color = c1)
-    lines!(ax1, sort(data, param)[!,param], cm_mean_of_bins!(data, param, quant1, nb_bins), color = c2)
+    lines!(ax1, sort(data, param)[!,param], mean_of_bins!(data, param, quant1, nb_bins), color = c2)
     scatter!(ax2, data[!,param], data[!,quant2], markersize = ms, color = c1)
-    lines!(ax2, sort(data, param)[!,param], cm_mean_of_bins!(data, param, quant2, nb_bins), color = c2)
+    lines!(ax2, sort(data, param)[!,param], mean_of_bins!(data, param, quant2, nb_bins), color = c2)
     hidespines!(ax1, :t, :r)
     hidespines!(ax2, :t, :r)
     return fig
@@ -189,7 +189,7 @@ function fig_seven(data::DataFrame = dcm)
     
     ax2 = Axis(fig[1,2], xlabel = l["spwp"], ylabel = l["s"], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
     scatter!(ax2, data[!,"spwp"], data[!,"s"], markersize = ms, color = c1)
-    lines!(ax2, sort(data, "spwp")[!,"spwp"], cm_mean_of_bins!(data, "spwp", "s", 100), color = c2)
+    lines!(ax2, sort(data, "spwp")[!,"spwp"], mean_of_bins!(data, "spwp", "s", 100), color = c2)
     #lines!(ax2, sort!(data, "spwp")[!,"spwp"], movingaverage(data[:,"s"],n), color = c2)
     scatter!(ax2, Point2f(spwp[1], s_bdot), marker = :circle, markersize = ds, color = :blue)
     scatter!(ax2, Point2f(spwp[2], s_odot), marker = :circle, markersize = ds, color = :darkorange2)

@@ -61,6 +61,6 @@ function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::
         println("Only implemented for τ dataset so far.")
     end
     df = DataFrame(pnames = p, MI_rel = rmi)
-    CSV.write(datadir("sims", "mutual information", "final", filename * ".csv"), df)
+    #CSV.write(datadir("sims", "mutual information", "final", filename * ".csv"), df)
     return df
 end

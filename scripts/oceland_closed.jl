@@ -39,7 +39,7 @@ function cm_compute_EQ_data(nb_runs::Int, tau::Bool=true)
     x0 = @SVector [0.5, 50.0, 50.0]
 
     for n = 1:nb_runs
-        sol = [sol; cm_fixedpoints(x0, tau)]
+        sol = [sol; cm_equilibrium_solution(x0, tau)]
     end
 
     sol_df = DataFrame(sol, col_names)

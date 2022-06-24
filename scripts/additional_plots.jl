@@ -4,7 +4,9 @@ using DrWatson
 using CairoMakie
 using Colors 
 using DataFrames
+using LaTeXStrings
 include(srcdir("parametrisations.jl"))
+include(srcdir("figure_labels.jl"))
 
 
 function El_tuning_param_plot()
@@ -116,5 +118,73 @@ function no_influx_ocean_plot()
     xlims!(ax, (0, 40))
     ylims!(ax, (0, 20))
     axislegend(ax, position = :lt, framevisible = false, labelsize = 16)
+    return fig
+end
+
+function cm_t_evolution_plot(s, wl, wo, t)
+    c1 = "dodgerblue"
+    c2 = "darkblue"
+    c3 = "darkgreen"
+
+    fig = Figure(resolution = (1000, 600))
+    ax1 = Axis(fig[1,1], xlabelsize = 28, ylabel = "w [mm]", ylabelsize = 28, yticklabelsize = 20, xticklabelsize = 20)
+    ax2 = Axis(fig[2,1], xlabel = "t [days]", xlabelsize = 28, ylabel = "s", ylabelsize = 28, yticklabelsize = 20, xticklabelsize = 20)
+    hidespines!(ax1, :t, :r)
+    hidespines!(ax2, :t, :r)
+    lines!(ax1, t, wl, linewidth = 3.0, label="w_l", color=c1)
+    lines!(ax1, t, wo, linewidth = 3.0, label="w_o", color=c2)
+    lines!(ax2, t, s, linewidth = 3.0, color=c3)
+    axislegend(ax1, framevisible = false, labelsize = 28)
+
+    return fig
+end
+
+function PR_α_comparison_plot(df1, df2, lb1, lb2, x, y, xlab, ylab, ttl, comp)
+    fig = Figure()
+    ax  = Axis(fig[1,1], xlabel = xlab, ylabel = ylab, title = ttl)
+    hidespines!(ax, :t, :r)
+    scatter!(ax, df1[!,x], df1[!,y], color = (:royalblue, 0.6), label = lb1, markersize = 5.0)
+    scatter!(ax, df2[!,x], df2[!,y], color = (:chocolate, 0.6), label = lb2, markersize = 5.0)
+    vlines!(ax, df1[df1.PR .== minimum(df1.PR), "α"][1], linewidth = 3.0, linestyle = :dash, color = (:royalblue, 0.6))
+    vlines!(ax, df2[df2.PR .== minimum(df2.PR), "α"][1], linewidth = 3.0, linestyle = :dash, color = (:chocolate, 0.6))
+    axislegend(ax, position = :lb)
+    save(plotsdir("Closed model", "Parameter scatter plots/", "smooth", "PR-alpha_parameter_influences", "PR-alpha_$(comp)_varied.png"),fig)
+    return fig
+end
+
+function rel_mi_plot(rel_mi_data::DataFrame)
+    sort!(rel_mi_data, "MI_rel", rev = true)
+    l = short_labels_dict()
+    n = nrow(rel_mi_data)
+    xrange = collect(1:1:n)
+    f = Figure(resolution = (600, 450))
+    ax = Axis(f[1,1], yscale = log10, xlabel = L"Model parameters $p_i$", ylabel = L"Mutual information index $I_{MI}\, (p_i\, ,\chi)$", xlabelsize = 20, ylabelsize = 20, xgridcolor = :white, ygridcolor = :white)
+    #ylims!(ax, 0.1, 500.0)
+    hlines!(ax, 1.0, linestyle = :dash, color = :grey35, label = "3σ significance threshold")
+    scatter!(ax, xrange, rel_mi_data[:, "MI_rel"], marker = '*', markersize = 25, color = :grey20)
+    ax.xticks = (1:1:n, rel_mi_data[:,"pnames"])
+    axislegend(ax, framevisible = false, labelsize = 16)
+    hidespines!(ax, :t, :r)
+    return f
+end
+
+function runoff_plot()
+    l = full_labels_dict()
+    lfs = 20
+    legendfs = 16
+    lw = 3.0
+    c = [:grey20, :grey40, :grey60, :grey70]
+    s = collect(0.0:0.01:1.0)
+    r = [2, 4, 6]
+    labls = [L"r = 2", L"r = 4", L"r = 6"]
+    fig = Figure(resolution = (500, 400))
+    ax = Axis(fig[1,1], xlabel = l["s"], ylabel = l["R"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+
+    for n=1:length(r)
+        R = [el^r[n] for el in s]
+        lines!(ax, s, R, linewidth = lw, color = c[n], label = labls[n])
+    end
+    hidespines!(ax, :t, :r)
+    axislegend(ax, position = :lt, framevisible = false, labelsize = legendfs)
     return fig
 end

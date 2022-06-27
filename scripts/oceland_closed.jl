@@ -48,7 +48,7 @@ function cm_compute_EQ_data(nb_runs::Int, tau::Bool=true)
         ps = "uL"
     end
 
-    #CSV.write(datadir("sims", "closed model data", "Final runs", "cm_$(ps)_fixedpoints_$(nb_runs)runs.csv"), sol_df)
+    #CSV.write(datadir("sims", "closed model", "test_$(nb_runs)runs.csv"), sol_df)
     
     return sol_df
 

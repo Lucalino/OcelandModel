@@ -15,6 +15,7 @@ include(srcdir("parametrisations.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("create_model_output.jl"))
 
+
 """
     om_compute_EQ_data(nb_runs::Int, model_version::String)
 
@@ -34,8 +35,9 @@ function om_compute_EQ_data(nb_runs::Int, model_version::String = "paper")
     end
 
     sol_df = DataFrame(sol, col_names)
+    CSV.write(datadir("sims", "open model", "test_$(nb_runs)runs.csv"), sol_df)
     return sol_df
-    #CSV.write(datadir("sims", "open model", "om_$(model_version)_fixedpoints_runs$(nb_runs)_sym_updatedparams-5.csv"), sol_df)
+
 end
 
 

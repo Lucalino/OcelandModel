@@ -11,9 +11,9 @@ include(srcdir("utils.jl"))
 include(srcdir("figure_labels.jl"))
 
 
-dcm     = CSV.read(datadir("sims", "closed model/final/cm_smooth_tau_fixedpoints_runs100000_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
-dcm_mi   = CSV.read(datadir("sims", "mutual information/final/cm_rel_mi_100000_runs_final" * ".csv"), DataFrame)
-dom     = CSV.read(datadir("sims", "open model/final/om_v2_sym_fixedpoints_runs100000_updated_ranges_final_all_quantities" * ".csv"), DataFrame)
+dcm      = CSV.read(datadir("closed model/cm_tau_fixedpoints_100000_runs_all_quantities" * ".csv"), DataFrame)
+dcm_mi   = CSV.read(datadir("mutual information/cm_rel_mi_100000_runs" * ".csv"), DataFrame)
+dom      = CSV.read(datadir("open model/om_sym_fixedpoints_100000_runs_all_quantities" * ".csv"), DataFrame)
 
 
 function fig_two(data::DataFrame = dcm)

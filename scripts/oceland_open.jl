@@ -35,7 +35,7 @@ function om_compute_EQ_data(nb_runs::Int, model_version::String = "paper")
     end
 
     sol_df = DataFrame(sol, col_names)
-    CSV.write(datadir("sims", "open model", "test_$(nb_runs)runs.csv"), sol_df)
+    #CSV.write(datadir("sims", "open model", "test_$(nb_runs)runs.csv"), sol_df)
     return sol_df
 
 end

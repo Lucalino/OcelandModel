@@ -5,8 +5,10 @@ using CairoMakie
 using Colors 
 using DataFrames
 using LaTeXStrings
-include(srcdir("parametrisations.jl"))
+include(srcdir("parametrizations.jl"))
 include(srcdir("figure_labels.jl"))
+include(srcdir("create_model_output.jl"))
+include(srcdir("utils.jl"))
 
 
 function El_tuning_param_plot()
@@ -94,6 +96,20 @@ function parametrisation_plots()
     hidespines!(ax3, :t, :r)
 
     return f1, f2, f3
+end
+
+function max_wind_plot(days::Float64)
+    l = full_labels_dict()
+    lfs = 20
+    lw = 3.0
+    p = cm_fixed_params(false)
+    t = collect(0.0:0.01:days)
+    u = [diurnal_wind(el, p) for el in t]
+    fig = Figure(resolution = (500,400))
+    ax = Axis(fig[1,1], xlabel = l["t"], ylabel = l["umax"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    lines!(ax, t, u, linewidth = lw)
+    hidespines!(ax, :t, :r)
+    return fig
 end
 
 function no_influx_ocean_plot()
@@ -186,5 +202,31 @@ function runoff_plot()
     end
     hidespines!(ax, :t, :r)
     axislegend(ax, position = :lt, framevisible = false, labelsize = legendfs)
+    return fig
+end
+
+function surface_temp_plot()
+    l = full_labels_dict()
+    lfs = 20
+    lw = 3.0
+    p = cm_fixed_params(false)
+    t = collect(0.0:0.01:1.0)
+    Tsrf = [surface_temperature(el, p) for el in t]
+    fig = Figure(resolution = (500,400))
+    ax = Axis(fig[1,1], xlabel = l["t"], ylabel = l["Tsrf"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    lines!(ax, t, Tsrf, linewidth = lw)
+    hidespines!(ax, :t, :r)
+    return fig
+end
+    
+
+function time_series(x::String = "t", y::String)
+    l = full_labels_dict()
+    lfs = 20
+    lw = 3.0
+    fig = Figure(resolution = (500,400))
+    ax = Axis(fig[1,1], xlabel = l[x], ylabel = l[y], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    lines!(ax, t, Tsrf, linewidth = lw)
+    hidespines!(ax, :t, :r)
     return fig
 end

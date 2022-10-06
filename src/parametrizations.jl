@@ -1,3 +1,40 @@
+function advected_moisture(wl, wo, t, p)
+    if wind_DC(t,p) > 0
+        return wo
+    else
+        return wl
+    end
+end
+
+
+
+"""
+    density_moist_air(T::Float64, q::Float64, p::Dict{Symbol, Float64})
+
+Compute the density of moist air with specific humidity q in kg/kg and
+temperature T in K using the ideal gas law.
+"""
+function density_moist_air(T::Float64, q::Float64, p::Dict{Symbol, Float64})
+    @unpack P0, Rd = p
+    return P0 / (Rd * virtual_temperature(T, q))
+end
+
+
+function evap_scaling(t, p)
+    @unpack f_a = p
+    if f_a == 0.0
+        return 1.0
+    else
+        return f_a * (1 + cos(2π * (t - 0.5)))
+    end
+end
+
+function wind_DC(t, p::Dict{Symbol, Float64})
+    @unpack u_max, t_shift = p
+    return u_max * cos(2π * (t - 0.5 - t_shift))
+end
+
+
 """
     El_tanh(s, p::Dict{Symbol, Float64})
 
@@ -10,6 +47,17 @@ function El_tanh(s, p::Dict{Symbol, Float64})
     return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
 end
 
+
+#CAUTION: NOT FINISHED
+function El_from_LH(T::Float64, s, p::Dict{Symbol, Float64})
+    @unpack P0, λ, Rd = p
+    q0 = saturation_specific_humidity(T, p)
+    q_2m = specific_humidity(2, q0, p)
+    ρ0 = density_moist_air(T, q0)
+    r_s = 
+    
+    return density_moist_air()
+end
 
 
 
@@ -30,7 +78,7 @@ end
 """
     precip(w,p::Dict{Symbol, Float64})
 
-Computes the mean precipitation rate as a function of water vapour pass, w, and the model parameters
+Compute the mean precipitation rate as a function of water vapour pass, w, and the model parameters
 a, b., and saturation water vapour pass, w_sat. 
 First introduced by Bretherton et al. (2004), DOI:10.1175/1520-0442(2004)017<1517:RBWVPA>2.0.CO;2
 
@@ -39,6 +87,80 @@ function precip(w,p::Dict{Symbol, Float64})
     @unpack wsat, a, b = p
     return exp(a*(w / wsat - b))
 end
+
+
+
+
+"""
+    saturation_pressure(T:Float64)
+
+Compute the saturation water vapor pressure in Pa with the August-Roche-Magnus formula 
+which approximates the Clausius-Clapeyron relationship assuming a temperature-independent
+specific latent heat of evaporation.
+"""
+function saturation_pressure(T::Float64)
+    return hPa2Pa(6.1094 * exp(17.625*K2dC(T)/(K2dC(T)+243.04)))
+end
+
+
+"""
+    saturation_specific_humidity(T::Float64, p::Dict{Symbol, Float64})
+
+Compute the saturation specific humidity in kg/kg.
+"""
+function saturation_specific_humidity(T::Float64, p::Dict{Symbol, Float64})
+    @unpack P0 = p
+    return 0.622 * saturation_pressure(T) / P0
+end
+
+
+
+
+function soil_resistance(s::Float64, p::Dict{Symbol, Float64})
+    @unpack rfc, sfc, spwp = p
+    return rfc * (sfc - spwp)/(s - spwp)
+end
+
+
+
+"""
+    specific_humidity(z::Float64, q_l0::Float64, p::Dict{Symbol, Float64})
+
+Compute the specific humidity at height z, starting from a surface value q_0 and assuming a moisture scale height λ.
+The shape of the assumed specific humidity profile is taken from Stevens (2007), DOI:10.1175/JAS3983.1.
+"""
+function specific_humidity(z::Float64, q_0::Float64, p::Dict{Symbol, Float64})
+    @unpack λ = p
+    return q_0 * exp(- z/λ)
+end
+
+"""
+    surface_temperature(t::Float64, p::Dict{Symbol, Float64})   
+
+Compute the surface temperature in K at a given time t (in hours since midnight). The parameters T_mean and T_amp,
+contained in parameter dictionary p, determine the diurnal mean temperature and temperature amplitude.
+"""
+function surface_temperature(t::Float64, p::Dict{Symbol, Float64})
+    @unpack T_mean, T_amp = p
+    return T_mean + T_amp * cos(2π * (t - 0.5))
+end
+
+
+"""
+    virtual_temperature(T::Float64, q::Float64)
+
+Compute the virtual temperature for given normal temperature T in K and
+specific humidity q in kg/kg.
+"""
+function virtual_temperature(T::Float64, q::Float64)
+    return T * (1 + 0.61 * q)
+end
+
+function wind_DC(t::Float64, p::Dict{Symbol, Float64})
+    @unpack u_max, t_shift = p
+    return u_max * cos(2π * (t - 0.5 - t_shift))
+end
+
 
 
 

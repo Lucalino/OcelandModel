@@ -36,6 +36,16 @@ function closed_model_uL(x, p, t)
 end
 
 
+function closed_model_DC_u!(du, u, p, t)
+    @unpack nZr, eo, α, L = p
+    du[1] = (precip(u[2], p) * infiltration(u[1], p) - evap_scaling(t, p) * El_tanh(u[1], p)) / nZr
+    du[2] = evap_scaling(t, p) * El_tanh(u[1], p) - precip(u[2], p) + 2 * advected_moisture(u[2], u[3], t, p) * wind_DC(t, p) / (α * L)
+    du[3] = eo - precip(u[3], p) - 2 * advected_moisture(u[2], u[3], t, p) * wind_DC(t, p) / ((1-α) * L)
+    #a = eo - precip(u[3], p)
+    #b = 2 * advected_moisture(u[2], u[3], t, p) * wind_DC(t, p) / ((1-α) * L)
+    #@show a, b
+end
+
 
 """
     open_model_v_paper(x, p, t)
@@ -102,3 +112,7 @@ function open_model_w_tracked(x, p, t)
 
     return SVector(ds, dw1, dw2, dw3)
 end
+
+
+
+

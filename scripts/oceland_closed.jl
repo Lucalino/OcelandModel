@@ -11,19 +11,20 @@ using Distributions
 using DynamicalSystems
 using Random
 using StaticArrays
-include(srcdir("parametrisations.jl"))
+using DifferentialEquations
+include(srcdir("parametrizations.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("create_model_output.jl"))
 include(srcdir("model_versions.jl"))
 include(srcdir("sensitivity_analysis.jl"))
 
-
+#USED FOR PAPER
 """
     cm_compute_EQ_data(nb_runs::Int, tau::Bool=true))
 
-Compute the fixed points of the closed Oceland model for a number (nb_runs) of 
-combinations of parameter values that are randomly chosen from ranges defined in 
-cm_rand_params().
+Compute the fixed points of the closed Oceland model, which is purely based on water balance equations without
+a diurnal cycle, for a number (nb_runs) of combinations of parameter values that are randomly chosen from ranges 
+defined in cm_rand_params().
 The input parameter tau determines whether the equations are formulated with τ (tau = true) 
 or with u and L individually (tau = false).
 The function returns a DataFrame with parameter values and corresponding equilibrium
@@ -52,4 +53,15 @@ function cm_compute_EQ_data(nb_runs::Int, tau::Bool=true)
     
     return sol_df
 
+end
+
+
+#USED IN SUBSEQUENT PROJECT
+function t_dependent_solution()
+    u0 = [0.0; 0.0; 0.0]
+    tspan = (0.0, 100.0)
+    p = cm_fixed_params(false)
+    prob = ODEProblem(closed_model_DC_u!, u0, tspan, p)
+    sol = solve(prob, Tsit5(), reltol = 1e-8, abstol = 1e-8, dtmax = 0.0001)
+    return sol, p
 end

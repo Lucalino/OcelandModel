@@ -41,6 +41,27 @@ function cm_derived_quantities!(df_name)
     return df
 end
 
+function cm_DC_derived_quantities(sol, p)
+    t  = sol.t
+    s  = sol[1,:]
+    wl = sol[2,:]
+    wo = sol[3,:]
+    wind = [wind_DC(elm, p) for elm in t]
+    ad_mois = [advected_moisture(elm[1], elm[2], elm[3], p) for elm in zip(wl, wo, t)]
+    land_size = p[:α] * p[:L]
+    ocean_size = (1 .- p[:α]) * p[:L]
+    El = [evap_scaling(elm, p) for elm in t] .* [El_tanh(elm, p) for elm in s]
+    Eo = [p[:eo] for elm in t]
+    Pl = [precip(elm, p) for elm in wl]
+    Po = [precip(elm, p) for elm in wo]
+    R  = (1 .- [infiltration(elm, p) for elm in s]) .* Pl
+    Al = 2 .* ad_mois .* wind ./ land_size
+    Ao = - 2 .* ad_mois .* wind ./ ocean_size
+    balance = Eo .+ El .- Po .- Pl
+    df = DataFrame(t=t, s = s, wl = wl, wo = wo, wind = wind, El = El, Eo = Eo, Pl = Pl, Po = Po, R = R, Al = Al, Ao = Ao, watbal = balance)
+    return df
+end
+
 
 function cm_equilibrium_solution(x0, tau::Bool)
     
@@ -73,7 +94,7 @@ function cm_equilibrium_solution(x0, tau::Bool)
 end
 
 
-function cm_fixed_params(tau=true)
+function cm_fixed_params(tau::Bool=true)
 
     d = Dict{Symbol, Float64}(
         :spwp => 0.3,     
@@ -82,11 +103,21 @@ function cm_fixed_params(tau=true)
         :eo   => 3.0,     
         :ϵ    => 1.0,     
         :r    => 2.0,     
-        :α    => 0.1,     
+        :α    => 0.5,     
         :nZr  => 100.0,   
         :a    => 15.6,    
         :b    => 0.603,  
         :wsat => 72.0,    
+        :λ    => 1500.00, #moisture scale height
+        #:P0   => hPa2Pa(1000.00), #surface pressure
+        :Rd   => 287, #specific gas constant for dry asymmetric
+        :cα   => 4*10^(-3), #coefficient in air resistance term for land
+        :rsfc => 0.0, #soil resistance at field capacity - NEEDS MORE RESEARCH
+        :T_amp  => 5.0, #diurnal surface temperature amplitude
+        :T_mean => 300, #diurnal mean surface temperature
+        :t_shift=> 1/24, #time-shift of wind wrt surface temperature measured in days
+        :u_max  => 10.0, #maximum wind speed during the course of a day
+        :f_a  => 0.0,
     )
 
     d[:sfc] = d[:spwp] + 0.3
@@ -95,7 +126,7 @@ function cm_fixed_params(tau=true)
         d[:τ] = 0.5
     elseif tau == false
         d[:u] = 5.0 * m2mm(1.0)/s2day(1.0)
-        d[:L] = 1000.0 * km2mm(1.0)
+        d[:L] = 100.0 * km2mm(1.0)
     else
         error("Choose whether to specify τ (true) or L and u (false).")
     end

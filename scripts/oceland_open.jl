@@ -11,7 +11,7 @@ using DynamicalSystems
 using StaticArrays
 using Random
 include(srcdir("model_versions.jl"))
-include(srcdir("parametrisations.jl"))
+include(srcdir("parametrizations.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("create_model_output.jl"))
 

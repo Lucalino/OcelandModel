@@ -2,7 +2,7 @@ using DrWatson
 @quickactivate "Oceland Model"
 
 using CairoMakie
-using Colors 
+using ColorSchemes
 using DataFrames
 using LaTeXStrings
 include(srcdir("parametrizations.jl"))
@@ -220,13 +220,43 @@ function surface_temp_plot()
 end
     
 
-function time_series(x::String = "t", y::String)
+function time_series(data::DataFrame, y::String, x::String = "t")
     l = full_labels_dict()
     lfs = 20
     lw = 3.0
     fig = Figure(resolution = (500,400))
     ax = Axis(fig[1,1], xlabel = l[x], ylabel = l[y], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
-    lines!(ax, t, Tsrf, linewidth = lw)
+    lines!(ax, data[!, x], data[!, y], linewidth = lw)
     hidespines!(ax, :t, :r)
+    return fig
+end
+
+function time_series_exp(data::DataFrame, y::String, x::String = "t")
+    l = full_labels_dict()
+    lfs = 20
+    lw = 3.0
+    fig = Figure(resolution = (500,400))
+    ax = Axis(fig[1,1], xlabel = l[x], ylabel = l[y], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    lines!(ax, data[!, x], data[!, y], linewidth = lw)
+    #ylims!(ax, (0, 10^(-10)))
+    xlims!(ax, 490, 500)
+    hidespines!(ax, :t, :r)
+    return fig
+end
+
+function multiple_time_series(data_var::Vector{Vector{Float64}}, data_time::Vector{Vector{Float64}}, lab::Vector{Float64})
+    l = full_labels_dict()
+    lfs = 20
+    lw = 3.0
+    fig = Figure(resolution = (600,400))
+    ax = Axis(fig[1,1], xlabel = l["t"], ylabel = l["PRmean"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    for n = 1:length(data_var)
+        lines!(ax, data_time[n][1:end-100], data_var[n][1:end-100], linewidth = lw, label = "α = $(lab[n])")
+    end
+    lines!(ax, data_time[1][1:end-100], [1.0 for el in data_time[1][1:end-100]], linewidth = lw, color = :black)
+    hidespines!(ax, :t, :r)
+    axislegend(ax, framevisible = false, labelsize = 16)
+    #xlims!(0,10)
+    #ylims!(0,5)
     return fig
 end

@@ -57,11 +57,25 @@ end
 
 
 #USED IN SUBSEQUENT PROJECT
-function t_dependent_solution()
+#solution computed directly with DifferentialEquations.jl
+function cm_DC_diffeq(t_length::Float64)
     u0 = [0.0; 0.0; 0.0]
-    tspan = (0.0, 100.0)
+    tspan = (0.0, t_length)
     p = cm_fixed_params(false)
-    prob = ODEProblem(closed_model_DC_u!, u0, tspan, p)
+    prob = ODEProblem(closed_model_DC_wind!, u0, tspan, p)
     sol = solve(prob, Tsit5(), reltol = 1e-8, abstol = 1e-8, dtmax = 0.0001)
-    return sol, p
+    d = cm_DC_derived_quantities(sol, p)
+    return d
+end
+
+#solution computed with DynamicalSystems.jl (adds more functionality)
+function cm_DC_dynsys(t_length::Float64)
+    x0 = [0.0, 0.0, 0.0]
+    p = cm_fixed_params(false)
+    ds = ContinuousDynamicalSystem(closed_model_DC, x0, p)
+    tr = trajectory(ds, t_length)
+    t = collect(0.0:0.01:t_length)
+    raw_data = hcat(t, tr)
+    data = cm_DC_derived_quantities(raw_data, p)
+    return data
 end

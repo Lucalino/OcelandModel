@@ -44,7 +44,7 @@ The shape of the function is inspired by a sketch in Seneviratne et al. (2010), 
 """
 function El_tanh(s, p::Dict{Symbol, Float64})
     @unpack spwp, sfc, ep, pt = p
-    return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2
+    return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2 - 0.0005404682428196139
 end
 
 
@@ -85,7 +85,7 @@ First introduced by Bretherton et al. (2004), DOI:10.1175/1520-0442(2004)017<151
 """
 function precip(w,p::Dict{Symbol, Float64})
     @unpack wsat, a, b = p
-    return exp(a*(w / wsat - b))
+    return exp(a*(w / wsat - b)) - 8.21634501634205e-5
 end
 
 

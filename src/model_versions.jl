@@ -36,7 +36,7 @@ function closed_model_uL(x, p, t)
 end
 
 
-function closed_model_DC_u!(du, u, p, t)
+function closed_model_DC_wind!(du, u, p, t)
     @unpack nZr, eo, α, L = p
     du[1] = (precip(u[2], p) * infiltration(u[1], p) - evap_scaling(t, p) * El_tanh(u[1], p)) / nZr
     du[2] = evap_scaling(t, p) * El_tanh(u[1], p) - precip(u[2], p) + 2 * advected_moisture(u[2], u[3], t, p) * wind_DC(t, p) / (α * L)
@@ -45,6 +45,16 @@ function closed_model_DC_u!(du, u, p, t)
     #b = 2 * advected_moisture(u[2], u[3], t, p) * wind_DC(t, p) / ((1-α) * L)
     #@show a, b
 end
+
+
+function closed_model_DC(x, p, t)
+    @unpack nZr, eo, α, L = p
+    ds  = (precip(x[2], p) * infiltration(x[1], p) - evap_scaling(t, p) * El_tanh(x[1], p)) / nZr
+    dwl = evap_scaling(t, p) * El_tanh(x[1], p) - precip(x[2], p) + 2 * advected_moisture(x[2], x[3], t, p) * wind_DC(t, p) / (α * L)
+    dwo = eo - precip(x[3], p) - 2 * advected_moisture(x[2], x[3], t, p) * wind_DC(t, p) / ((1-α) * L)
+    return SVector(ds, dwl, dwo)
+end
+
 
 
 """

@@ -69,7 +69,7 @@ function cm_DC_diffeq(t_length::Float64)
 end
 
 #solution computed with DynamicalSystems.jl (adds more functionality)
-function cm_DC_dynsys(t_length::Float64)
+function cm_DC_dynsys(t_length::Float64=1000.0)
     x0 = [0.0, 0.0, 0.0]
     p = cm_fixed_params(false)
     ds = ContinuousDynamicalSystem(closed_model_DC, x0, p)
@@ -77,5 +77,21 @@ function cm_DC_dynsys(t_length::Float64)
     t = collect(0.0:0.01:t_length)
     raw_data = hcat(t, tr)
     data = cm_DC_derived_quantities(raw_data, p)
+    eq_mean_state = cm_DC_EQmeanvalues(ds, x0, p)
+    return data, eq_mean_state
+end
+
+
+function one_at_a_time_sensitivity(param::Symbol, llim::Float64, ulim::Float64, t_length = 1000.0)
+    x0 = [0.5, 50.0, 50.0]
+    p = cm_fixed_params(false)
+    ds = ContinuousDynamicalSystem(closed_model_DC, x0, p)
+    EQstates = Array{Float64}(undef, 0, 3)
+    param_range = collect(llim:(ulim-llim)/100:ulim)
+    for n in param_range
+        p[param] = n
+        EQstates = [EQstates; transpose(cm_DC_EQmeanvalues(ds, x0, p))]
+    end
+    data = hcat(param_range, EQstates)
     return data
 end

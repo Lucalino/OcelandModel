@@ -227,6 +227,7 @@ function time_series(data::DataFrame, y::String, x::String = "t")
     fig = Figure(resolution = (500,400))
     ax = Axis(fig[1,1], xlabel = l[x], ylabel = l[y], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
     lines!(ax, data[!, x], data[!, y], linewidth = lw)
+    #xlims!(ax, -10, 10)
     hidespines!(ax, :t, :r)
     return fig
 end
@@ -238,25 +239,71 @@ function time_series_exp(data::DataFrame, y::String, x::String = "t")
     fig = Figure(resolution = (500,400))
     ax = Axis(fig[1,1], xlabel = l[x], ylabel = l[y], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
     lines!(ax, data[!, x], data[!, y], linewidth = lw)
+    # vlines!(ax, 2, color=:black, linestyle = :dot)
+    # vlines!(ax, 60, color=:black, linestyle = :dot)
+    # vlines!(ax, 130, color=:black, linestyle = :dot)
+    # vlines!(ax, 240, color=:black, linestyle = :dot)
+    # vlines!(ax, 450, color=:black, linestyle = :dot)
     #ylims!(ax, (0, 10^(-10)))
-    xlims!(ax, 490, 500)
+    xlims!(ax, 0, 10)
     hidespines!(ax, :t, :r)
     return fig
 end
 
-function multiple_time_series(data_var::Vector{Vector{Float64}}, data_time::Vector{Vector{Float64}}, lab::Vector{Float64})
+# function multiple_time_series(data_var::Vector{Vector{Float64}}, data_time::Vector{Vector{Float64}}, lab::Vector{Float64})
+#     l = full_labels_dict()
+#     lfs = 20
+#     lw = 3.0
+#     fig = Figure(resolution = (600,400))
+#     ax = Axis(fig[1,1], xlabel = l["t"], ylabel = l["PRmean"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+#     for n = 1:length(data_var)
+#         lines!(ax, data_time[n][1:end-100], data_var[n][1:end-100], linewidth = lw, label = "α = $(lab[n])")
+#     end
+#     lines!(ax, data_time[1][1:end-100], [1.0 for el in data_time[1][1:end-100]], linewidth = lw, color = :black)
+#     hidespines!(ax, :t, :r)
+#     axislegend(ax, framevisible = false, labelsize = 16)
+#     #xlims!(0,10)
+#     #ylims!(0,5)
+#     return fig
+# end
+
+function multiple_time_series(data::DataFrame, y1::String, y2::String, y3::String, x::String = "t")
+    l = full_labels_dict()
+    lbn = labels_norm_dict()
+    lfs = 20
+    lw = 3.0
+    fig = Figure(resolution = (500,400))
+    ax = Axis(fig[1,1], xticks = [0.0, 0.25, 0.5, 0.75, 1.0], xlabel = l[x], ylabel = L"\mathrm{Fluxes\, \, \, [mm/day]}", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    lines!(ax, data[!,x] .- 800, data[!,y1], linewidth = lw, label = lbn[y1])
+    lines!(ax, data[!,x] .- 800, data[!,y2], linewidth = lw, label = lbn[y2])
+    lines!(ax, data[!,x] .- 800, data[!,y3], linewidth = lw, label = lbn[y3])
+    # lines!(ax, data[!,x], data[!,y1], linewidth = lw, label = L"s")
+    # lines!(ax, data[!,x], data[!,y2]./45, linewidth = lw, label = L"w_\ell /45.0")
+    # lines!(ax, data[!,x], data[!,y3]./45, linewidth = lw, label = L"w_\mathrm{o} /45.0")
+    # vlines!(ax, 2, color=:black, linestyle = :dot)
+    # vlines!(ax, 20, color=:black, linestyle = :dot)
+    # vlines!(ax, 60, color=:black, linestyle = :dot)
+    # vlines!(ax, 115, color=:black, linestyle = :dot)
+    # vlines!(ax, 220, color=:black, linestyle = :dot)
+    hidespines!(ax, :t, :r)
+    axislegend(ax, framevisible = false, labelsize = 16, position = :rc)
+    #xlims!(-10,400)
+    #ylims!(0,5)
+    return fig
+end
+
+function PR_param_plot(param::String, data, p)
     l = full_labels_dict()
     lfs = 20
     lw = 3.0
-    fig = Figure(resolution = (600,400))
-    ax = Axis(fig[1,1], xlabel = l["t"], ylabel = l["PRmean"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
-    for n = 1:length(data_var)
-        lines!(ax, data_time[n][1:end-100], data_var[n][1:end-100], linewidth = lw, label = "α = $(lab[n])")
-    end
-    lines!(ax, data_time[1][1:end-100], [1.0 for el in data_time[1][1:end-100]], linewidth = lw, color = :black)
+
+    x = data[:,1]
+    PR= [precip(elm,p) for elm in data[:,3]] ./ [precip(elm,p) for elm in data[:,4]]
+    
+    fig = Figure(resolution = (500,400))
+    ax = Axis(fig[1,1], xlabel = l[param], ylabel = l["PRmean"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    lines!(ax, x, PR, linewidth = lw)
+    hlines!(ax, 1.0, linestyle = :dot, color = :black, linewidth = 2.0)
     hidespines!(ax, :t, :r)
-    axislegend(ax, framevisible = false, labelsize = 16)
-    #xlims!(0,10)
-    #ylims!(0,5)
     return fig
 end

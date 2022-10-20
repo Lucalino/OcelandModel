@@ -41,6 +41,29 @@ function cm_derived_quantities!(df_name)
     return df
 end
 
+
+function cm_DC_EQmeanvalues(ds::GeneralizedDynamicalSystem, x0, p)
+    sg = range(0, 1; length = 100)
+    wlg = wog = range(0, p[:wsat], length = 100)
+    grid = (sg, wlg, wog)
+    mapper = AttractorsViaRecurrences(ds, grid)
+    mapper(x0)
+    attrs = mapper.bsn_nfo.attractors
+    if length(attrs) > 1
+        @warn "More than one attractor found. Now you have to go implement a solution for this case."
+    elseif length(attrs) == 0
+        @warn "No attractor found."
+        return nothing
+    else 
+        seq = round(mean(attrs[1][:,1]), digits=2)
+        wleq = round(mean(attrs[1][:,2]), digits=1)
+        woeq = round(mean(attrs[1][:,3]), digits=1)
+        eq_mean_vals = [seq, wleq, woeq]
+        return eq_mean_vals
+    end
+end
+
+
 function cm_DC_derived_quantities(data::Dataset{4, Float64}, p)
     ## Naming for when solution to solve() was passed instead of a Dataset
     #t  = sol.t
@@ -112,7 +135,7 @@ function cm_fixed_params(tau::Bool=true)
         :eo   => 3.0,     
         :ϵ    => 1.0,     
         :r    => 2.0,     
-        :α    => 0.8,     
+        :α    => 0.3,     
         :nZr  => 100.0,   
         :a    => 15.6,    
         :b    => 0.603,  
@@ -142,6 +165,7 @@ function cm_fixed_params(tau::Bool=true)
 
     return d
 end
+
 
 
 function cm_rand_params(tau::Bool=true)
@@ -326,6 +350,9 @@ function om_state_space(p::Dict)
     box = s_range × w1_range × w2_range × w3_range
     return box
 end
+
+
+
 
 
 

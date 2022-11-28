@@ -43,22 +43,34 @@ function relative_mi(x::Vector, y::Vector, bin_length = 0.1, N = 1000)
 end
 
 
-function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::String, om = false, τ = true)
-    if τ == true
+function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::String, om = false, τ = true, lin = false)
+    if lin == false   
+        if τ == true
 
-        if om == false
-            p = ["α", "b", "ep", "spwp", "nZr", "ϵ", "a", "wsat", "τ", "eo", "r"]
+            if om == false
+                p = ["α", "b", "ep", "spwp", "nZr", "ϵ", "a", "wsat", "τ", "eo", "r"]
+            else
+                p = ["α", "b", "ep", "spwp", "nZr", "w0", "ϵ", "a", "wsat", "τ", "u", "L", "eo", "r"]
+            end
+
+            rmi = zeros(length(p))
+            for i = 1:length(p)
+                rmi[i] = relative_mi(data[:,p[i]], data[:,yquant])
+            end
+
         else
-            p = ["α", "b", "ep", "spwp", "nZr", "w0", "ϵ", "a", "wsat", "τ", "u", "L", "eo", "r"]
+            println("Only implemented for τ dataset so far.")
         end
-
-        rmi = zeros(length(p))
-        for i = 1:length(p)
-            rmi[i] = relative_mi(data[:,p[i]], data[:,yquant])
-        end
-
     else
-        println("Only implemented for τ dataset so far.")
+        if om == false
+            p = ["α", "τ", "p", "e", "r", "eo"]
+            rmi = zeros(length(p))
+            for i = 1:length(p)
+                rmi[i] = relative_mi(data[:,p[i]], data[:,yquant])
+            end
+        else
+           @warn "Closed model version not yet implemented."
+        end
     end
     df = DataFrame(pnames = p, MI_rel = rmi)
     #CSV.write(datadir("sims", "mutual information", "final", filename * ".csv"), df)

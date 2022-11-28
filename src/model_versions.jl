@@ -1,7 +1,7 @@
 """
     closed_model_τ(x, p, t)
 
-This model version is used in the paper. Closed model equations where wind speed u and 
+This model verion is used in the paper. Closed model equations where wind speed u and 
 domain length L are combined to form the atmospheric transport parameter τ. 
 """
 function closed_model_τ(x, p, t)
@@ -21,7 +21,7 @@ end
 """
     closed_model_uL(x, p, t)
 
-Closed model equations where wind speed u and domain length L are kept as separate parameters
+Closed model equations where wind speed u and domain length L are kept as separate parameter
 which can be varied independently of each other.
 """
 function closed_model_uL(x, p, t)
@@ -56,11 +56,51 @@ function closed_model_DC(x, p, t)
 end
 
 
+function cm_DC_w_xt!(dw, w, p, t)
+    @unpack dx, x = p
+    E = 3.0
+
+    for i = 1:length(w)
+        if w[i] < 0
+            w[i] = 0
+        end
+    end  
+
+    dwdx = diff(vcat(w, [w[1]])) / dx
+    wind = wind_DC_xt.(x,t,Ref(p))
+    dwinddx = dwind_dx_DC_xt.(x,t,Ref(p))
+    #@show dwdx, dwinddx
+
+    dw .= E .- precip.(w, Ref(p)) .- wind .* dwdx .- w .* dwinddx 
+
+    #dw .= E .- precip.(w, Ref(p)) .- w .* dwinddx
+    # ad_min = minimum(abs.(wind .* dwdx))
+    # ad_max = maximum(abs.(wind .* dwdx))
+    # con_min = minimum(abs.(w .* dwinddx))
+    # con_max = maximum(abs.(w .* dwinddx))
+    # @show ad_min, ad_max, con_min, con_max
+end
+
+function cm_lin(param)
+    @unpack eo, e, p, r, τ, α = param
+
+    s  = (-1) * ((-eo * r * τ + e * (-1 + α) * τ + eo * r * α * τ + sqrt((-1 + α) * τ * (e^2 * (-1 + α) * τ + eo^2 * r^2 * (-1 + α) * τ +  2 * eo * e * r * (2 * p * (-1 + α) * α - (1 + α) \ τ)))) / (2 * e * r * α * (p * (-1 + α) - τ)))
+    wl = (-1) * ((eo * r * τ + e * (-1 + α) * τ - eo * r * α * τ + sqrt((-1 + α) * τ * (e^2 * (-1 + α) * τ + eo^2 * r^2 * (-1 + α) * τ + 2 * eo * e * r * (2 * p * (-1 + α) * α - (1 + α) \ τ)))) / (2 * p * r * (p * (-1 + α) * α - τ)))
+    wo = (eo * r * (-1 + α) * (2 * p^2 * (-1 + α) * α - 2 * p * τ - τ^2) + τ * (e * (-1 + α) * τ + sqrt((-1 + α) * τ * (e^2 * (-1 + α) * τ + eo^2 * r^2 * (-1 + α) * τ + 2 * eo * e * r * (2 * p * (-1 + α) * α - (1 + α) \ τ))))) / (2 * p * r * (p * (-1 + α) - τ) * (p * (-1 + α) * α - τ))
+
+    #Formally equilibrium solutions but unphysical:
+    #s2  = (eo + r * τ - eo * r * α * τ + e * (τ - α * τ) + sqrt((-1 + α) * τ * (e^2 * (-1 + α) * τ + eo^2 * r^2 * (-1 + α) * τ + 2 * eo * e * r * (2 * p * (-1 + α) * α - (1 + α) \ τ)))) / (2 * e * r * α * (p * (-1 + α) - τ))
+    #wl2 = (-eo * r * τ + eo * r * α * τ + e * (τ - α * τ) + sqrt((-1 + α) * τ * (e^2 * (-1 + α) * τ + eo^2 * r^2 * (-1 + α) * τ + 2 * eo * e * r * (2 * p * (-1 + α) * α - (1 + α) \ τ)))) / (2 * p * r * (p * (-1 + α)* α - τ))
+    #wo2 = (eo * r * (-1 + α) * (2 * p^2 * (-1 + α) * α - 2 * p * τ - τ^2) + τ * (e * (-1 + α) * τ - sqrt((-1 + α) * τ * (e^2 * (-1 + α) * τ + eo^2 * r^2 * (-1 + α) * τ + 2 * eo * e * r * (2 * p * (-1 + α) * α - (1 + α) \ τ))))) / (2 * p * r * (p * (-1 + α) - τ) * (p * (-1 + α) * α - τ))
+    return s, wl, wo   
+end
+
+
 
 """
     open_model_v_paper(x, p, t)
 
-This model version was used in the paper. It is the open analogy to the closed model
+This model verion was used in the paper. It is the open analogy to the closed model
 where advection fluxes are computed from the difference between the windward and leeward boxes' 
 mean water vapor passes. 
 The moisture variables are defined as follows: s = x[1], w1 = x[2], w2 = x[3], w3 = x[4].

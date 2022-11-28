@@ -42,7 +42,7 @@ Compute the mean evaporation rate from the land surface as a function of soil mo
 permanent wilting point, spwp, field capacity, sfc, and potential evaporation, Ep. 
 The shape of the function is inspired by a sketch in Seneviratne et al. (2010), DOI:10.1016/j.earscirev.2010.02.004.
 """
-function El_tanh(s, p::Dict{Symbol, Float64})
+function El_tanh(s, p::Dict{Symbol, Any})
     @unpack spwp, sfc, ep, pt = p
     return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2 - 0.0005404682428196139
 end
@@ -83,7 +83,7 @@ a, b., and saturation water vapour pass, w_sat.
 First introduced by Bretherton et al. (2004), DOI:10.1175/1520-0442(2004)017<1517:RBWVPA>2.0.CO;2
 
 """
-function precip(w,p::Dict{Symbol, Float64})
+function precip(w,p::Dict{Symbol, Any})
     @unpack wsat, a, b = p
     return exp(a*(w / wsat - b)) - 8.21634501634205e-5
 end
@@ -159,6 +159,28 @@ end
 function wind_DC(t::Float64, p::Dict{Symbol, Float64})
     @unpack u_max, t_shift = p
     return u_max * cos(2π * (t - 0.5 - t_shift))
+end
+
+function wind_DC_xt(x::Float64, t::Float64, p::Dict{Symbol, Any})
+    @unpack α, L, u_max = p
+    if (x < (1 - α) * L) & (x > 0)
+        u_ocean = u_max * cos(2*pi*t) * cos(pi * x / ((1-α)*L))
+        return u_ocean
+    else
+        u_land = u_max * cos(2*pi*t) * (-cos(pi * (x - (1-α)*L) / (α * L)))
+        return u_land
+    end
+end
+
+function dwind_dx_DC_xt(x::Float64, t::Float64, p::Dict{Symbol, Any})
+    @unpack α, L, u_max = p
+    if (x < (1 - α) * L) & (x > 0)
+        u_ocean = u_max * cos(2*pi*t) * pi / ((1-α) * L) * (-sin(pi * x / ((1-α)*L)))
+        return u_ocean
+    else
+        u_land = u_max * cos(2*pi*t) * pi / (α * L) * (-sin(pi * (x - (1-α)*L) / (α * L)))
+        return u_land
+    end
 end
 
 

@@ -12,6 +12,7 @@ using DynamicalSystems
 using Random
 using StaticArrays
 using DifferentialEquations
+using Statistics
 include(srcdir("parametrizations.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("create_model_output.jl"))
@@ -52,6 +53,23 @@ function cm_compute_EQ_data(nb_runs::Int, tau::Bool=true)
     #CSV.write(datadir("sims", "closed model", "test_$(nb_runs)runs.csv"), sol_df)
     
     return sol_df
+
+end
+
+
+#Computes analytical solutions to the model equations with linear fluxes 
+#for nb_runs randomly chosen combinations of parameter values. 
+function cm_compute_EQ_data_lin(nb_runs::Int)
+    col_names = [string(el) for el in keys(cm_lin_rand_params())]
+    col_names = append!(col_names, ["s", "wl", "wo"])
+    sol = Array{Float64}(undef, 0, length(col_names))
+    for n = 1:nb_runs
+        p = cm_lin_rand_params()
+        s, wl, wo = cm_lin(p)
+        solrow = [transpose(collect(values(p))) s wl wo]
+        sol = [sol; solrow]
+    end
+    return DataFrame(sol, col_names)     
 
 end
 

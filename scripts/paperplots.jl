@@ -102,6 +102,7 @@ function fig_five(data::DataFrame = dcm, yquant::String = "PR", xquant1::String 
     c1 = (:grey35, 0.5)
     c2 = :lightgrey
     gc = :white
+    cm = cgrad(:speed,7;categorical=true,alpha = 0.3)
 
     fig = Figure(resolution = (800, 650))
     ax1 = Axis(fig[1, 1], xlabel = l[xquant1], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
@@ -109,18 +110,23 @@ function fig_five(data::DataFrame = dcm, yquant::String = "PR", xquant1::String 
     ax3 = Axis(fig[2, 1], xlabel = l[xquant3], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc) 
     ax4 = Axis(fig[2, 2], xlabel = l[xquant4], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
         
-    scatter!(ax1, data[!,xquant1], data[!,yquant], markersize = ms, color = c1)
+    scatter!(ax1, data[!,xquant1], data[!,yquant], markersize = ms, color = data[!,"s"], colormap = cm)#c1)#data[!,"s"], colormap = cm)
+    #scatter!(ax1, reverse(sort(data,"s")[!,xquant1]), reverse(sort(data,"s")[!,yquant]), markersize = ms, color = reverse(mean_of_bins!(data, "s", "s", 10)), colormap = cm)#data[!,"s"], colormap = cm)
     lines!(ax1, sort(data, xquant1)[!,xquant1], mean_of_bins!(data, xquant1, yquant, nb_bins), color = c2)
-    scatter!(ax2, data[!,xquant2], data[!,yquant], markersize = ms, color = c1)
+    scatter!(ax2, data[!,xquant2], data[!,yquant], markersize = ms, color = c1)#data[!,"s"], colormap = cm)
     lines!(ax2, sort(data, xquant2)[!,xquant2], mean_of_bins!(data, xquant2, yquant, nb_bins), color = c2)
-    scatter!(ax3, data[!,xquant3], data[!,yquant], markersize = ms, color = c1)
+#    scatter!(ax3, data[!,xquant3], data[!,yquant], markersize = ms, color = c1)#data[!,"s"], colormap = cm)
+    scatter!(ax3, reverse(sort(data,"s")[!,xquant3]), reverse(sort(data,"s")[!,yquant]), markersize = ms, color = mean_of_bins!(data, "s", "s", 10), colormap = cm)#data[!,"s"], colormap = cm)
+
     lines!(ax3, sort(data, xquant3)[!,xquant3], mean_of_bins!(data, xquant3, yquant, nb_bins), color = c2)
-    scatter!(ax4, data[!,xquant4], data[!,yquant], markersize = ms, color = c1)
+    scatter!(ax4, data[!,xquant4], data[!,yquant], markersize = ms, color = c1)#data[!,"s"], colormap = cm)
     lines!(ax4, sort(data, xquant4)[!,xquant4], mean_of_bins!(data, xquant4, yquant, nb_bins), color = c2)
     hidespines!(ax1, :t, :r)
     hidespines!(ax2, :t, :r)
     hidespines!(ax3, :t, :r)
     hidespines!(ax4, :t, :r)
+    Colorbar(fig[1:2,3], label = "Soil moisture saturation", colormap = cm)
+
     return fig
 end
 

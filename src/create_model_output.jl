@@ -7,7 +7,7 @@ solutions for s, wl and wo and return them as new columns of the input DataFrame
 """
 function cm_derived_quantities!(df_name)
 
-    df = CSV.read(datadir("sims", df_name * ".csv"), DataFrame)
+    df = CSV.read(datadir("closed model", df_name * ".csv"), DataFrame)
     
     df.Pl = exp.(df.a .* (df.wl ./ df.wsat .- df.b))
     df.Po = exp.(df.a .* (df.wo ./ df.wsat .- df.b))
@@ -41,7 +41,26 @@ function cm_derived_quantities!(df_name)
     return df
 end
 
+function cm_lin_derived_quantities!(df_name)
+    df = CSV.read(datadir("closed model", df_name * ".csv"), DataFrame)
 
+    df.Pl = df.p .* df.wl
+    df.Po = df.p .* df.wo
+    df.χ  = df.Pl ./ df.Po
+    df.El = df.e .* df.s
+    df.Rf = df.r .* df.s
+    df.Φ  = 1 .- df.Rf
+    df.R  = df.Rf .* df.Pl
+    df.Al = (df.wo .- df.wl) .* df.τ ./ df.α
+    df.Ao = (df.wo .- df.wl) .* df.τ ./ (1 .- df.α)
+    df.sblc = (df.Pl .* df.Φ .- df.El) ./ df.nZr
+    df.lblc = df.El .- df.Pl .+ df.Al
+    df.oblc = df.eo .- df.Po .- df.Ao
+
+    CSV.write(datadir("closed model", df_name * "_all_quantities.csv"), df)
+    return df
+end
+    
 function cm_DC_EQmeanvalues(ds::GeneralizedDynamicalSystem, x0, p)
     sg = range(0, 1; length = 100)
     wlg = wog = range(0, p[:wsat], length = 100)
@@ -128,7 +147,7 @@ end
 
 function cm_fixed_params(tau::Bool=true)
 
-    d = Dict{Symbol, Float64}(
+    d = Dict{Symbol, Any}(
         :spwp => 0.3,     
         :ep   => 4.38,    
         :pt   => 10.0,         
@@ -148,7 +167,7 @@ function cm_fixed_params(tau::Bool=true)
         :T_amp  => 5.0, #diurnal surface temperature amplitude
         :T_mean => 300, #diurnal mean surface temperature
         :t_shift=> 1/24, #time-shift of wind wrt surface temperature measured in days
-        :u_max  => m2mm(10.0)/s2day(1.0), #maximum wind speed during the course of a day
+        :u_max  => m2mm(1.0)/s2day(1.0), #maximum wind speed during the course of a day
         :f_a  => 0.0,
     )
 
@@ -158,10 +177,30 @@ function cm_fixed_params(tau::Bool=true)
         d[:τ] = 0.5
     elseif tau == false
         d[:u] = 5.0 * m2mm(1.0)/s2day(1.0)
-        d[:L] = 40000.0 * km2mm(1.0)
+        d[:L] = 400.0 * km2mm(1.0)
     else
         error("Choose whether to specify τ (true) or L and u (false).")
     end
+
+    #Create land-sea mask
+    d[:dx] = 4.0 * km2mm(1.0)
+    d[:nb_boxes] = Int(round(d[:L] / d[:dx]))
+    if d[:L] / d[:dx] % 1 != 0 
+        d[:L] = d[:nb_boxes] * d[:dx]
+        @warn "Number of boxes was not an integer. Domain got adapted accordingly."
+    end
+    nb_ocean_boxes = Int(round((1 - d[:α]) * d[:L] / d[:dx]))
+    nb_land_boxes = d[:nb_boxes] - nb_ocean_boxes
+    ((1 - d[:α]) * d[:L] / d[:dx]) % 1 != 0 && @warn "Number of boxes did not perfectly match the land fraction. Ocean was enlarged and land fraction adapted accordingly."
+    d[:α] = nb_land_boxes * d[:dx] / d[:L]
+    d[:lsmask] = vcat(zeros(nb_ocean_boxes), ones(nb_land_boxes))
+
+    #Create x-Vector
+    x = [
+        d[:dx]/2 + d[:dx] * i
+        for i = 0:d[:nb_boxes]-1
+    ]
+    d[:x] = x
 
     return d
 end
@@ -212,6 +251,19 @@ function cm_rand_params(tau::Bool=true)
 
     d[:sfc] = d[:spwp] + 0.3                      #inferred from Hagemann & Stacke (2015)
 
+    return d
+end
+
+function cm_lin_rand_params()
+    d = Dict{Symbol, Float64}(
+            :p    => rand(Uniform(0.3, 0.5)),  #slope of precipitation as function of w
+            :e    => rand(Uniform(4.0, 6.75)),    #slope of land evaporation as function of s
+            :eo   => rand(Uniform(2.5, 3.5)),    #[mm/day] ocean evaporation rate, lower limit from Kumar et al. (2017), lower limit motivated by Zang et al. (1995)
+            :r    => rand(Uniform(0.9, 1.0)),        #slope of runoff fraction as function of s
+            :α    => rand(Uniform(0.0, 1.0)),    #land fraction
+            :nZr  => rand(Uniform(50.0, 120.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - taken from Entekhabi et al. (1992)
+            :τ    => rand(Uniform( (1.0 * m2mm(1)/s2day(1))/(40000.0 * km2mm(1)), (10.0 * m2mm(1)/s2day(1))/(1000.0 * km2mm(1)) )), #using u_min=1m/s, u_max=10m/s, L_min=1000km, L_max=40000km
+        )
     return d
 end
 

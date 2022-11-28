@@ -5,11 +5,15 @@ using CairoMakie
 using ColorSchemes
 using DataFrames
 using LaTeXStrings
+using DynamicalSystems
+using VegaLite
+using VegaDatasets
 include(srcdir("parametrizations.jl"))
 include(srcdir("figure_labels.jl"))
 include(srcdir("create_model_output.jl"))
 include(srcdir("utils.jl"))
 
+dcm      = CSV.read(datadir("closed model/cm_tau_fixedpoints_100000_runs_all_quantities" * ".csv"), DataFrame)
 
 function El_tuning_param_plot()
 
@@ -218,92 +222,147 @@ function surface_temp_plot()
     hidespines!(ax, :t, :r)
     return fig
 end
+
+function fig_five_threeregimes(data::DataFrame = dcm, yquant::String = "PR", xquant1::String = "τ", xquant2::String = "α", xquant3::String = "spwp", xquant4::String = "r")
+    l = labels_dict()
+    lfs = 20
+    ms = 5
+    lw = 2.5
+    nb_bins = 100
+    c1 = (:grey35, 0.5)
+    c_dry = (:orange3, 0.5)
+    c_drymean = (:orange4)
+    c_med = (:olivedrab, 0.3)
+    c_medmean = (:darkolivegreen)
+    c_wet = (:darkgreen, 0.5)
+    c_wetmean = (:black) 
+    c2 = :white#:lightgrey
+    gc = :white
+
+    ddry = data[data.s .< 0.36,:]
+    dmed = data[(data.s .> 0.36) .& (data.s .< 0.61), :]
+    dwet = data[data.s .> 0.61,:]
+
+    fig = Figure(resolution = (800, 650))
+    ax1 = Axis(fig[1, 1], xlabel = l[xquant1], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
+    ax2 = Axis(fig[1, 2], xlabel = l[xquant2], xlabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
+    ax3 = Axis(fig[2, 1], xlabel = l[xquant3], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc) 
+    ax4 = Axis(fig[2, 2], xlabel = l[xquant4], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
+        
+    scatter!(ax1, dwet[!,xquant1], dwet[!,yquant], markersize = ms, color = c_wet)
+    scatter!(ax1, dmed[!, xquant1], dmed[!,yquant], markersize = ms, color = c_med)
+    scatter!(ax1, ddry[!,xquant1], ddry[!,yquant], markersize = ms, color = c_dry)
+    lines!(ax1, sort(data, xquant1)[!,xquant1], mean_of_bins!(data, xquant1, yquant, nb_bins), color = c2, linewidth = lw)
+    lines!(ax1, sort(ddry, xquant1)[!,xquant1], mean_of_bins!(ddry, xquant1, yquant, 60), color = c_drymean, linestyle = :dash, linewidth = lw)
+    lines!(ax1, sort(dmed[1:70785,:], xquant1)[!,xquant1], mean_of_bins!(dmed[1:70785,:], xquant1, yquant, 65), color = c_medmean, linestyle = :dash, linewidth = lw)
+    lines!(ax1, sort(dwet[1:15640,:], xquant1)[!,xquant1], mean_of_bins!(dwet[1:15640,:], xquant1, yquant, 68), color = c_wetmean, linestyle = :dash, linewidth = lw)
+
+    scatter!(ax2, dwet[!,xquant2], dwet[!,yquant], markersize = ms, color = c_wet)
+    scatter!(ax2, dmed[!, xquant2], dmed[!,yquant], markersize = ms, color = c_med)
+    scatter!(ax2, ddry[!,xquant2], ddry[!,yquant], markersize = ms, color = c_dry)
+    lines!(ax2, sort(data, xquant2)[!,xquant2], mean_of_bins!(data, xquant2, yquant, nb_bins), color = c2, linewidth = lw)
+    lines!(ax2, sort(ddry, xquant2)[!,xquant2], mean_of_bins!(ddry, xquant2, yquant, 60), color = c_drymean, linestyle = :dash, linewidth = lw)
+    lines!(ax2, sort(dmed[1:70785,:], xquant2)[!,xquant2], mean_of_bins!(dmed[1:70785,:], xquant2, yquant, 65), color = c_medmean, linestyle = :dash, linewidth = lw)
+    lines!(ax2, sort(dwet[1:15640,:], xquant2)[!,xquant2], mean_of_bins!(dwet[1:15640,:], xquant2, yquant, 68), color = c_wetmean, linestyle = :dash, linewidth = lw)
+
+
+    scatter!(ax3, dmed[!, xquant3], dmed[!,yquant], markersize = ms, color = c_med)
+    scatter!(ax3, ddry[!,xquant3], ddry[!,yquant], markersize = ms, color = c_dry)
+    scatter!(ax3, dwet[!,xquant3], dwet[!,yquant], markersize = ms, color = c_wet)
+    lines!(ax3, sort(data, xquant3)[!,xquant3], mean_of_bins!(data, xquant3, yquant, nb_bins), color = c2, linewidth = lw)
+    lines!(ax3, sort(ddry, xquant3)[!,xquant3], mean_of_bins!(ddry, xquant3, yquant, 60), color = c_drymean, linestyle = :dash, linewidth = lw)
+    lines!(ax3, sort(dmed[1:70785,:], xquant3)[!,xquant3], mean_of_bins!(dmed[1:70785,:], xquant3, yquant, 65), color = c_medmean, linestyle = :dash, linewidth = lw)
+    lines!(ax3, sort(dwet[1:15640,:], xquant3)[!,xquant3], mean_of_bins!(dwet[1:15640,:], xquant3, yquant, 68), color = c_wetmean, linestyle = :dash, linewidth = lw)
+
+    scatter!(ax4, dwet[!,xquant4], dwet[!,yquant], markersize = ms, color = c_wet)
+    scatter!(ax4, dmed[!, xquant4], dmed[!,yquant], markersize = ms, color = c_med)
+    scatter!(ax4, ddry[!,xquant4], ddry[!,yquant], markersize = ms, color = c_dry)
+    lines!(ax4, sort(data, xquant4)[!,xquant4], mean_of_bins!(data, xquant4, yquant, nb_bins), color = c2, linewidth = lw)
+    lines!(ax4, sort(ddry, xquant4)[!,xquant4], mean_of_bins!(ddry, xquant4, yquant, 60), color = c_drymean, linestyle = :dash, linewidth = lw)
+    lines!(ax4, sort(dmed[1:70785,:], xquant4)[!,xquant4], mean_of_bins!(dmed[1:70785,:], xquant4, yquant, 65), color = c_medmean, linestyle = :dash, linewidth = lw)
+    lines!(ax4, sort(dwet[1:15640,:], xquant4)[!,xquant4], mean_of_bins!(dwet[1:15640,:], xquant4, yquant, 68), color = c_wetmean, linestyle = :dash, linewidth = lw)
+
+
+    hidespines!(ax1, :t, :r)
+    hidespines!(ax2, :t, :r)
+    hidespines!(ax3, :t, :r)
+    hidespines!(ax4, :t, :r)
+    return fig
+end
     
 
-function time_series(data::DataFrame, y::String, x::String = "t")
-    l = full_labels_dict()
-    lfs = 20
-    lw = 3.0
-    fig = Figure(resolution = (500,400))
-    ax = Axis(fig[1,1], xlabel = l[x], ylabel = l[y], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
-    lines!(ax, data[!, x], data[!, y], linewidth = lw)
-    #xlims!(ax, -10, 10)
-    hidespines!(ax, :t, :r)
+function fig_five_colormap(data::DataFrame = dcm, yquant::String = "PR", xquant1::String = "τ", xquant2::String = "α", xquant3::String = "spwp", xquant4::String = "r")
+    fig = dcm |>  @vlplot(:point, x=:spwp, y=:PR, color=:s, width=400, height=400)
     return fig
 end
-
-function time_series_exp(data::DataFrame, y::String, x::String = "t")
-    l = full_labels_dict()
-    lfs = 20
-    lw = 3.0
-    fig = Figure(resolution = (500,400))
-    ax = Axis(fig[1,1], xlabel = l[x], ylabel = l[y], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
-    lines!(ax, data[!, x], data[!, y], linewidth = lw)
-    # vlines!(ax, 2, color=:black, linestyle = :dot)
-    # vlines!(ax, 60, color=:black, linestyle = :dot)
-    # vlines!(ax, 130, color=:black, linestyle = :dot)
-    # vlines!(ax, 240, color=:black, linestyle = :dot)
-    # vlines!(ax, 450, color=:black, linestyle = :dot)
-    #ylims!(ax, (0, 10^(-10)))
-    xlims!(ax, 0, 10)
-    hidespines!(ax, :t, :r)
-    return fig
-end
-
-# function multiple_time_series(data_var::Vector{Vector{Float64}}, data_time::Vector{Vector{Float64}}, lab::Vector{Float64})
-#     l = full_labels_dict()
-#     lfs = 20
-#     lw = 3.0
-#     fig = Figure(resolution = (600,400))
-#     ax = Axis(fig[1,1], xlabel = l["t"], ylabel = l["PRmean"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
-#     for n = 1:length(data_var)
-#         lines!(ax, data_time[n][1:end-100], data_var[n][1:end-100], linewidth = lw, label = "α = $(lab[n])")
-#     end
-#     lines!(ax, data_time[1][1:end-100], [1.0 for el in data_time[1][1:end-100]], linewidth = lw, color = :black)
-#     hidespines!(ax, :t, :r)
-#     axislegend(ax, framevisible = false, labelsize = 16)
-#     #xlims!(0,10)
-#     #ylims!(0,5)
-#     return fig
-# end
-
-function multiple_time_series(data::DataFrame, y1::String, y2::String, y3::String, x::String = "t")
-    l = full_labels_dict()
-    lbn = labels_norm_dict()
-    lfs = 20
-    lw = 3.0
-    fig = Figure(resolution = (500,400))
-    ax = Axis(fig[1,1], xticks = [0.0, 0.25, 0.5, 0.75, 1.0], xlabel = l[x], ylabel = L"\mathrm{Fluxes\, \, \, [mm/day]}", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
-    lines!(ax, data[!,x] .- 800, data[!,y1], linewidth = lw, label = lbn[y1])
-    lines!(ax, data[!,x] .- 800, data[!,y2], linewidth = lw, label = lbn[y2])
-    lines!(ax, data[!,x] .- 800, data[!,y3], linewidth = lw, label = lbn[y3])
-    # lines!(ax, data[!,x], data[!,y1], linewidth = lw, label = L"s")
-    # lines!(ax, data[!,x], data[!,y2]./45, linewidth = lw, label = L"w_\ell /45.0")
-    # lines!(ax, data[!,x], data[!,y3]./45, linewidth = lw, label = L"w_\mathrm{o} /45.0")
-    # vlines!(ax, 2, color=:black, linestyle = :dot)
-    # vlines!(ax, 20, color=:black, linestyle = :dot)
-    # vlines!(ax, 60, color=:black, linestyle = :dot)
-    # vlines!(ax, 115, color=:black, linestyle = :dot)
-    # vlines!(ax, 220, color=:black, linestyle = :dot)
-    hidespines!(ax, :t, :r)
-    axislegend(ax, framevisible = false, labelsize = 16, position = :rc)
-    #xlims!(-10,400)
-    #ylims!(0,5)
-    return fig
-end
-
-function PR_param_plot(param::String, data, p)
-    l = full_labels_dict()
-    lfs = 20
-    lw = 3.0
-
-    x = data[:,1]
-    PR= [precip(elm,p) for elm in data[:,3]] ./ [precip(elm,p) for elm in data[:,4]]
     
-    fig = Figure(resolution = (500,400))
-    ax = Axis(fig[1,1], xlabel = l[param], ylabel = l["PRmean"], ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
-    lines!(ax, x, PR, linewidth = lw)
-    hlines!(ax, 1.0, linestyle = :dot, color = :black, linewidth = 2.0)
-    hidespines!(ax, :t, :r)
+
+function fig_five_lin(data::DataFrame = dcm, yquant::String = "χ", xquant1::String = "τ", xquant2::String = "α", xquant3::String = "e", xquant4::String = "r", xquant5::String = "p", xquant6::String = "eo")
+    l = labels_lin_dict()
+    lfs = 20
+    ms = 5
+    nb_bins = 100
+    c1 = (:grey35, 0.5)
+    c2 = :lightgrey
+    gc = :white
+
+    fig = Figure(resolution = (800, 900))
+    ax1 = Axis(fig[1, 1], xlabel = l[xquant1], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
+    ax2 = Axis(fig[1, 2], xlabel = l[xquant2], xlabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
+    ax3 = Axis(fig[2, 1], xlabel = l[xquant3], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc) 
+    ax4 = Axis(fig[2, 2], xlabel = l[xquant4], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
+    ax5 = Axis(fig[3, 1], xlabel = l[xquant5], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc) 
+    ax6 = Axis(fig[3, 2], xlabel = l[xquant6], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
+        
+    scatter!(ax1, data[!,xquant1], data[!,yquant], markersize = ms, color = c1)
+    lines!(ax1, sort(data, xquant1)[!,xquant1], mean_of_bins!(data, xquant1, yquant, nb_bins), color = c2)
+    scatter!(ax2, data[!,xquant2], data[!,yquant], markersize = ms, color = c1)
+    lines!(ax2, sort(data, xquant2)[!,xquant2], mean_of_bins!(data, xquant2, yquant, nb_bins), color = c2)
+    scatter!(ax3, data[!,xquant3], data[!,yquant], markersize = ms, color = c1)
+    lines!(ax3, sort(data, xquant3)[!,xquant3], mean_of_bins!(data, xquant3, yquant, nb_bins), color = c2)
+    scatter!(ax4, data[!,xquant4], data[!,yquant], markersize = ms, color = c1)
+    lines!(ax4, sort(data, xquant4)[!,xquant4], mean_of_bins!(data, xquant4, yquant, nb_bins), color = c2)
+    scatter!(ax5, data[!,xquant5], data[!,yquant], markersize = ms, color = c1)
+    lines!(ax5, sort(data, xquant5)[!,xquant5], mean_of_bins!(data, xquant5, yquant, nb_bins), color = c2)
+    scatter!(ax6, data[!,xquant6], data[!,yquant], markersize = ms, color = c1)
+    lines!(ax6, sort(data, xquant6)[!,xquant6], mean_of_bins!(data, xquant6, yquant, nb_bins), color = c2)
+    hidespines!(ax1, :t, :r)
+    hidespines!(ax2, :t, :r)
+    hidespines!(ax3, :t, :r)
+    hidespines!(ax4, :t, :r)
+    hidespines!(ax5, :t, :r)
+    hidespines!(ax6, :t, :r)
     return fig
 end
+
+
+
+function fig_two_lin(data::DataFrame = dcm)
+    l = full_labels_dict()
+    lfs = 20
+    lw = 2.5
+    c1 = :grey30
+    c2 = :grey40
+
+    f1 = Figure(resolution = (900, 400))
+    ax1 = Axis(f1[1, 1], xlabel = l["s"], ylabel = L"\mathrm{Probability}\, \, \mathrm{density}\, \, \mathrm{function}", ylabelsize = lfs, xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    ax3 = Axis(f1[1, 2], xlabel = L"Mean water vapor pass $w$", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    ax4 = Axis(f1[1,3], xlabel = L"Precipitation ratio $\chi$", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+
+    lines!(ax1, kde(data[!,"s"]), color = c1, linewidth = lw)    
+    lines!(ax3, kde(data[!,"wo"]), color = c1, linewidth = lw, label = L"\mathrm{ocean}")
+    lines!(ax3, kde(data[!,"wl"]), color = c1, linestyle = :dot, linewidth = lw, label = L"\mathrm{land}")
+    lines!(ax4, kde(data[!,"χ"]), color = c1, linewidth = lw)
+
+    axislegend(ax3, position = :rt, framevisible = false, labelsize = 20)
+    hidespines!(ax1, :t, :r)
+    hidespines!(ax3, :t, :r)
+    hidespines!(ax4, :t, :r)
+    #xlims!(ax3, (0,60))
+    #xlims!(ax1, (-0.02, 0.82))
+    colsize!(f1.layout, 1, Relative(1/3))
+    colsize!(f1.layout, 2, Relative(1/3))
+    colsize!(f1.layout, 3, Relative(1/3))
+    return f1
+end
+    

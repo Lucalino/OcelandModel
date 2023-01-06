@@ -197,17 +197,23 @@ function A_C_animation(s, p, lfs = lfs, lw = lw)
     advection = @lift(A[$time])
     convergence = @lift(C[$time])
     adv_and_conv = @lift(AnC[$time])
+    w = @lift(s.u[$time])
     wind = @lift((wind_DC_xt.(x, s.t[$time], Ref(p)) .* mm2m(1.0)./day2s(1.0)))
+    dwind = @lift((dwind_dx_DC_xt.(x, s.t[$time], Ref(p)) .* mm2m(1.0)./(day2s(1.0)^2)))
     fig = Figure(resolution = (800, 1200))
     ax1 = Axis(fig[1,1], xlabel = "x [km]", ylabel = "Advection [mm/day]", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white, title = @lift("t = $(round(s.t[$time], digits = 1)) days"))
     ax2 = Axis(fig[2,1], xlabel = "x [km]", ylabel = "Convergence [mm/day]", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
-    ax3 = Axis(fig[3,1], xlabel = "x [km]", ylabel = "Adv. + Conv. [mm/day]", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    #ax3 = Axis(fig[3,1], xlabel = "x [km]", ylabel = "Adv. + Conv. [mm/day]", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    ax3 = Axis(fig[3,1], xlabel = "x [km]", ylabel = "Water vapor path [mm]", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
+    #ax3 = Axis(fig[3,1], xlabel = "x [km]", ylabel = "Change of wind [mm/day^2]", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
     ax4 = Axis(fig[4,1], xlabel = "x [km]", ylabel = "Wind [m/s]", ylabelsize = lfs, xlabelsize = lfs, xgridcolor = :white, ygridcolor = :white)
     lines!(ax1, mm2km.(x), advection)
     vlines!(ax1, (1-α) * mm2km(L), linestyle = :dash, linewidth = 2.0)
     lines!(ax2, mm2km.(x), convergence)
     vlines!(ax2, (1-α) * mm2km(L), linestyle = :dash, linewidth = 2.0)
-    lines!(ax3, mm2km.(x), adv_and_conv)
+    #lines!(ax3, mm2km.(x), adv_and_conv)
+    lines!(ax3, mm2km.(x), w)
+    #lines!(ax3, mm2km.(x), dwind)
     vlines!(ax3, (1-α) * mm2km(L), linestyle = :dash, linewidth = 2.0)
     lines!(ax4, mm2km.(x), wind)
     vlines!(ax4, (1-α) * mm2km(L), linestyle = :dash, linewidth = 2.0)
@@ -218,7 +224,7 @@ function A_C_animation(s, p, lfs = lfs, lw = lw)
     hidespines!(ax4, :t, :r)
     # record(fig, "/Users/lucaschmidt/Documents/Oceland Model/plots/Project 2/animations/vapor_animation_pset1_10days_x0hom_AandC.mp4", 1:50:length(s.t); framerate = 100) do t
     #     time[] = t
-    record(fig, "/Users/lucaschmidt/Documents/Oceland Model/plots/Project 2/animations/AnC.mp4", 1:50:length(s.t); framerate = 100) do t
+    record(fig, "/Users/lucaschmidt/Documents/Oceland Model/plots/Project 2/animations/Removing the Zigzag/AnC_α03_dt=00001_dx=10km_w.mp4", 1:50:length(s.t); framerate = 1000) do t
         time[] = t
     end
 end
@@ -232,18 +238,19 @@ function AandC_matrices(s, p)
     C   = Array{Array{Float64}}(undef, nb_rows)
     AnC = Array{Array{Float64}}(undef, nb_rows)
     dwdx = zeros(nb_cols)
-    dwinddx = zeros(nb_cols)
+    #dwinddx = zeros(nb_cols)
     @unpack x, dx = p
     
     for i=1:nb_rows # i indexes time
         w = s.u[i,:][1]
-        wind = wind_DC_xt.(x, s.t[i],Ref(p))
+        wind = wind_DC_xt.(x, s.t[i], Ref(p))
+        dwinddx = dwind_dx_DC_xt.(x, s.t[i], Ref(p))
         for j=1:nb_cols-1 # j indexes location in x
             dwdx[j] = (w[j+1] - w[j]) / dx
-            dwinddx[j] = (wind[j+1] - wind[j]) / dx
+            #dwinddx[j] = (wind[j+1] - wind[j]) / dx
         end
         dwdx[nb_cols] = (w[1] - w[nb_cols]) / dx
-        dwinddx[nb_cols] = (wind[1] - w[nb_cols]) / dx
+        #dwinddx[nb_cols] = (wind[1] - w[nb_cols]) / dx
 
         A[i] = wind .* dwdx
         C[i] = w .* dwinddx

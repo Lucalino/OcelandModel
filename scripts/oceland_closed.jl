@@ -80,7 +80,7 @@ function cm_DC_diffeq(t_length::Float64)
     u0 = [0.0; 0.0; 0.0]
     tspan = (0.0, t_length)
     p = cm_fixed_params(false)
-    prob = ODEProblem(closed_model_DC_wind!, u0, tspan, p)
+    prob = ODEProblem(cm_DC_wind!, u0, tspan, p)
     sol = solve(prob, Tsit5(), reltol = 1e-8, abstol = 1e-8, dtmax = 0.0001)
     d = cm_DC_derived_quantities(sol, p)
     return d
@@ -90,7 +90,7 @@ end
 function cm_DC_dynsys(t_length::Float64=1000.0)
     x0 = [0.0, 0.0, 0.0]
     p = cm_fixed_params(false)
-    ds = ContinuousDynamicalSystem(closed_model_DC, x0, p)
+    ds = ContinuousDynamicalSystem(cm_DC, x0, p)
     tr = trajectory(ds, t_length)
     t = collect(0.0:0.01:t_length)
     raw_data = hcat(t, tr)
@@ -103,7 +103,7 @@ end
 function one_at_a_time_sensitivity(param::Symbol, llim::Float64, ulim::Float64, t_length = 1000.0)
     x0 = [0.5, 50.0, 50.0]
     p = cm_fixed_params(false)
-    ds = ContinuousDynamicalSystem(closed_model_DC, x0, p)
+    ds = ContinuousDynamicalSystem(cm_DC, x0, p)
     EQstates = Array{Float64}(undef, 0, 3)
     param_range = collect(llim:(ulim-llim)/100:ulim)
     for n in param_range

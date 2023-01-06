@@ -5,18 +5,25 @@ function information_entropy(x::Vector, y::Vector, nb_bins::Int)
 end
 
 
-function mutual_information(x::Vector, y::Vector, bin_length = 0.1)
+function mutual_information_binlength(x::Vector, y::Vector, bin_length = 0.1)
     xnorm = normalise(x)
     ynorm = normalise(y)
-    Hx  = genentropy(Dataset(xnorm), bin_length)
-    Hy  = genentropy(Dataset(ynorm), bin_length)
-    Hxy = genentropy(Dataset(xnorm,ynorm), bin_length)
+    Hx  = genentropy(probabilities(Dataset(xnorm), bin_length))
+    Hy  = genentropy(probabilities(Dataset(ynorm), bin_length))
+    Hxy = genentropy(probabilities(Dataset(xnorm,ynorm), bin_length))
     m = Hx + Hy - Hxy
     return m
 end
 
+function mutual_information_nbbins(x::Vector, y::Vector, nb_bins::Int = 10)
+    Hx = genentropy(probabilities(Dataset(x), nb_bins))
+    Hy = genentropy(probabilities(Dataset(y), nb_bins))
+    Hxy = genentropy(probabilities(Dataset(x,y), nb_bins))
+    m = Hx + Hy - Hxy
+    return m
+end
 
-function bootstrapping(x::Vector, y::Vector, bin_length = 0.1, N::Int = 1000)
+function bootstrapping_binlength(x::Vector, y::Vector, bin_length = 0.1, N::Int = 1000)
     xnorm = normalise(x)
     ynorm = normalise(y)
     null  = zeros(N)
@@ -34,16 +41,39 @@ function bootstrapping(x::Vector, y::Vector, bin_length = 0.1, N::Int = 1000)
     return null, μ, three_sigma
 end
 
+function bootstrapping_nbbins(x::Vector, y::Vector, nb_bins = 10, N::Int = 1000)
+    null  = zeros(N)
+    Hx  = genentropy(probabilities(Dataset(x), nb_bins))
+    Hy  = genentropy(probabilities(Dataset(y), nb_bins))
+    for i in 1:N
+        shuffle!(x)
+        shuffle!(y)
+        Hxy = genentropy(probabilities(Dataset(x, y), nb_bins))
+        null[i] = Hx + Hy - Hxy
+    end
+    μ = mean(null)
+    std = Statistics.std(null)
+    three_sigma = 3 * std
+    return null, μ, three_sigma
+end
 
-function relative_mi(x::Vector, y::Vector, bin_length = 0.1, N = 1000)
-    mi = mutual_information(x, y)
-    null, μ, three_sigma = bootstrapping(x,y)
+
+function relative_mi_binlength(x::Vector, y::Vector, bin_length = 0.1, N = 1000)
+    mi = mutual_information_binlength(x, y)
+    null, μ, three_sigma = bootstrapping_binlength(x,y)
+    mi_rel = mi / (μ + three_sigma)
+    return mi_rel
+end
+
+function relative_mi_nbbins(x::Vector, y::Vector, nb_bins = 10, N = 1000)
+    mi = mutual_information_nbbins(x, y, nb_bins)
+    null, μ, three_sigma = bootstrapping_nbbins(x,y, nb_bins)
     mi_rel = mi / (μ + three_sigma)
     return mi_rel
 end
 
 
-function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::String, om = false, τ = true, lin = false)
+function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::String, nbbins = 10, om = false, τ = true, lin = false)
     if lin == false   
         if τ == true
 
@@ -55,7 +85,7 @@ function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::
 
             rmi = zeros(length(p))
             for i = 1:length(p)
-                rmi[i] = relative_mi(data[:,p[i]], data[:,yquant])
+                rmi[i] = relative_mi_nbbins(data[:,p[i]], data[:,yquant], nbbins)
             end
 
         else
@@ -66,13 +96,13 @@ function all_parameter_sensitivities(data::DataFrame, yquant::String, filename::
             p = ["α", "τ", "p", "e", "r", "eo"]
             rmi = zeros(length(p))
             for i = 1:length(p)
-                rmi[i] = relative_mi(data[:,p[i]], data[:,yquant])
+                rmi[i] = relative_mi_nbbins(data[:,p[i]], data[:,yquant])
             end
         else
            @warn "Closed model version not yet implemented."
         end
     end
     df = DataFrame(pnames = p, MI_rel = rmi)
-    #CSV.write(datadir("sims", "mutual information", "final", filename * ".csv"), df)
+    CSV.write(datadir("mutual information", filename * ".csv"), df)
     return df
 end

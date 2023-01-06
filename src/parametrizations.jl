@@ -44,7 +44,7 @@ The shape of the function is inspired by a sketch in Seneviratne et al. (2010), 
 """
 function El_tanh(s, p::Dict{Symbol, Any})
     @unpack spwp, sfc, ep, pt = p
-    return ep/2 * tanh( pt * (s - (spwp+sfc)/2 ) ) + ep/2 - 0.0005404682428196139
+    return ep/2 * (1 + tanh( pt * (s - (spwp+sfc)/2 ) ) ) - (ep/2 * (1 + tanh( pt * (-(spwp+sfc)/2) )))
 end
 
 
@@ -67,7 +67,7 @@ end
 Compute the fraction of land precipitation that infiltrates the soil as a function of soil moisture, s, and the model 
 parameters ϵ and r. Defined e.g. in Rodriguez‐Iturbe et al. (1991), DOI: 10.1029/91WR01035.
 """
-function infiltration(s, p::Dict{Symbol, Float64})
+function infiltration(s, p::Dict{Symbol, Any})
     @unpack ϵ, r = p
     return 1 - ϵ*s^r
 end
@@ -85,7 +85,17 @@ First introduced by Bretherton et al. (2004), DOI:10.1175/1520-0442(2004)017<151
 """
 function precip(w,p::Dict{Symbol, Any})
     @unpack wsat, a, b = p
-    return exp(a*(w / wsat - b)) - 8.21634501634205e-5
+    return exp(a*(w / wsat - b)) - exp(-a*b)
+end
+
+function precip_land(w::Any, p::Dict{Symbol, Any})
+    @unpack wsat, a, bland = p
+    return exp(a*(w / wsat - bland)) - exp(-a*bland)
+end
+
+function precip_oce(w,p::Dict{Symbol, Any})
+    @unpack wsat, a, boce = p
+    return exp(a*(w / wsat - boce)) - exp(-a*boce)
 end
 
 
@@ -174,11 +184,11 @@ end
 
 function dwind_dx_DC_xt(x::Float64, t::Float64, p::Dict{Symbol, Any})
     @unpack α, L, u_max = p
-    if (x < (1 - α) * L) & (x > 0)
+    if (x < (1 - α) * L) & (x > 0) # ocean box
         u_ocean = u_max * cos(2*pi*t) * pi / ((1-α) * L) * (-sin(pi * x / ((1-α)*L)))
         return u_ocean
-    else
-        u_land = u_max * cos(2*pi*t) * pi / (α * L) * (-sin(pi * (x - (1-α)*L) / (α * L)))
+    else # land box
+        u_land = u_max * cos(2*pi*t) * pi / (α * L) * (sin(pi * (x - (1-α)*L) / (α * L)))
         return u_land
     end
 end

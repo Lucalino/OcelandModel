@@ -53,6 +53,7 @@ function cm_lin_derived_quantities!(df_name)
     df.R  = df.Rf .* df.Pl
     df.Al = (df.wo .- df.wl) .* df.τ ./ df.α
     df.Ao = (df.wo .- df.wl) .* df.τ ./ (1 .- df.α)
+    df.B  = df.Ao
     df.sblc = (df.Pl .* df.Φ .- df.El) ./ df.nZr
     df.lblc = df.El .- df.Pl .+ df.Al
     df.oblc = df.eo .- df.Po .- df.Ao
@@ -119,9 +120,10 @@ function cm_equilibrium_solution(x0, tau::Bool)
     p = cm_rand_params(tau) 
 
     if tau == true
-        dynsys = ContinuousDynamicalSystem(closed_model_τ, x0, p)
+        #dynsys = ContinuousDynamicalSystem(cm_τ, x0, p)
+        dynsys = ContinuousDynamicalSystem(cm_τ_Pl_neq_Po, x0, p)
     elseif tau == false
-        dynsys = ContinuousDynamicalSystem(closed_model_uL, x0, p)
+        dynsys = ContinuousDynamicalSystem(cm_uL, x0, p)
     end
 
     box = cm_state_space(p)
@@ -148,7 +150,7 @@ end
 function cm_fixed_params(tau::Bool=true)
 
     d = Dict{Symbol, Any}(
-        :spwp => 0.3,     
+        :spwp => 0.5,     
         :ep   => 4.38,    
         :pt   => 10.0,         
         :eo   => 3.0,     
@@ -183,7 +185,7 @@ function cm_fixed_params(tau::Bool=true)
     end
 
     #Create land-sea mask
-    d[:dx] = 4.0 * km2mm(1.0)
+    d[:dx] = 10.0 * km2mm(1.0)
     d[:nb_boxes] = Int(round(d[:L] / d[:dx]))
     if d[:L] / d[:dx] % 1 != 0 
         d[:L] = d[:nb_boxes] * d[:dx]
@@ -195,12 +197,19 @@ function cm_fixed_params(tau::Bool=true)
     d[:α] = nb_land_boxes * d[:dx] / d[:L]
     d[:lsmask] = vcat(zeros(nb_ocean_boxes), ones(nb_land_boxes))
 
-    #Create x-Vector
-    x = [
+    # Create x-Vector
+    # Grid points at interval centers
+    x_centers = [
         d[:dx]/2 + d[:dx] * i
         for i = 0:d[:nb_boxes]-1
     ]
-    d[:x] = x
+
+    # Grid points at left interval boundaries
+    x_left = [
+        d[:dx] * i for i = 0:d[:nb_boxes]-1
+    ]
+
+    d[:x] = x_centers
 
     return d
 end
@@ -211,7 +220,7 @@ function cm_rand_params(tau::Bool=true)
 
     if tau == true
 
-        d = Dict{Symbol, Float64}(
+        d = Dict{Symbol, Any}(
             :spwp => rand(Uniform(0.15, 0.55)),  #permanent wilting point, taken from Hagemann & Stacke (2015)
             :ep   => rand(Uniform(4.0, 6.0)),    #[mm/day] potential evaporation over land in mm/day, taken from Entekhabi et al. (1992)
             :eo   => rand(Uniform(2.5, 3.5)),    #[mm/day] ocean evaporation rate, lower limit from Kumar et al. (2017), lower limit motivated by Zang et al. (1995)
@@ -221,6 +230,8 @@ function cm_rand_params(tau::Bool=true)
             :nZr  => rand(Uniform(50.0, 120.0)), #[mm] reservoir depth/"field storage capacity of the soil" [mm] - taken from Entekhabi et al. (1992)
             :a    => rand(Uniform(11.4, 15.6)),  #numerical parameter from Bretherton et al. (2004)
             :b    => rand(Uniform(0.5, 0.6)),    #numerical parameter from Bretherton et al. (2004)
+            :bland=> 0.999*0.6,
+            :boce => 0.6,  
             :wsat => rand(Uniform(65.0, 80.0)),  #[mm] saturation water vapour pass derived from plots in Bretherton et al.(2004) - NEEDS MORE RESEARCH
             :τ    => rand(Uniform( (1.0 * m2mm(1)/s2day(1))/(40000.0 * km2mm(1)), (10.0 * m2mm(1)/s2day(1))/(1000.0 * km2mm(1)) )), #using u_min=1m/s, u_max=10m/s, L_min=1000km, L_max=40000km
             :pt   => 10.0,                       #tuning parameter for tanh function
@@ -229,7 +240,7 @@ function cm_rand_params(tau::Bool=true)
     
     elseif tau == false
 
-        d = Dict{Symbol, Float64}(
+        d = Dict{Symbol, Any}(
             :spwp => rand(Uniform(0.15, 0.55)),   #permanent wilting point
             :ep   => rand(Uniform(4.0, 6.0)),     #[mm/day] potential evaporation over land in mm/day, taken from Entekhabi et al. (1992)
             :eo   => rand(Uniform(2.5, 3.5)),     #[mm/day] ocean evaporation rate, lower limit from Kumar et al. (2017), lower limit motivated by Zang et al. (1995)
@@ -256,8 +267,8 @@ end
 
 function cm_lin_rand_params()
     d = Dict{Symbol, Float64}(
-            :p    => rand(Uniform(0.3, 0.5)),  #slope of precipitation as function of w
-            :e    => rand(Uniform(4.0, 6.75)),    #slope of land evaporation as function of s
+            :p    => rand(Uniform(0.06, 0.08)),#(0.07, 0.0875)),#0.025, 0.06)), #0.3, 0.5)),  #slope of precipitation as function of w
+            :e    => rand(Uniform(4.0, 6.5)),#(4.0, 6.75)),    #slope of land evaporation as function of s
             :eo   => rand(Uniform(2.5, 3.5)),    #[mm/day] ocean evaporation rate, lower limit from Kumar et al. (2017), lower limit motivated by Zang et al. (1995)
             :r    => rand(Uniform(0.9, 1.0)),        #slope of runoff fraction as function of s
             :α    => rand(Uniform(0.0, 1.0)),    #land fraction
@@ -331,11 +342,11 @@ function om_equilibrium_solution(x0, model_version::String)
     p = om_rand_params()
 
     if model_version == "paper"
-        dynsys = ContinuousDynamicalSystem(open_model_v_paper, x0, p)
+        dynsys = ContinuousDynamicalSystem(om_v_paper, x0, p)
     elseif model_version == "closed" 
-        dynsys = ContinuousDynamicalSystem(open_model_closed, x0, p)
+        dynsys = ContinuousDynamicalSystem(om_closed, x0, p)
     elseif model_version == "w_tracked"
-        dynsys = ContinuousDynamicalSystem(open_model_w_tracked, x0, p)
+        dynsys = ContinuousDynamicalSystem(om_w_tracked, x0, p)
     else
         error("Assign valid model_version name: paper, closed or w_tracked.")
     end

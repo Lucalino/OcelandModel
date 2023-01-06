@@ -7,6 +7,7 @@ using DynamicalSystems
 using Random
 using StaticArrays
 using DifferentialEquations
+#using ModelingToolkit
 include(srcdir("parametrizations.jl"))
 include(srcdir("utils.jl"))
 include(srcdir("create_model_output.jl"))
@@ -28,14 +29,20 @@ end
 
 function cm_DC_diffeq_xt(t_length::Float64)
     tspan = (0.0, t_length)
-    p = cm_fixed_params(false)
-    #p[:wdiff]
-    #w0 = fill(40.0, p[:nb_boxes])
-    w0 = [40.0 + 10*cos(2*pi * x / p[:L]) for x in p[:x]]
-    prob = ODEProblem(cm_DC_w_xt!, w0, tspan, p)
-    sol = solve(prob, Vern9(), reltol = 1e-8, abstol = 1e-8, dtmax = 0.0001) #Vern9()
+    pdict = cm_fixed_params(false)
+    
+    # Need to give parameters as vector in newest version of ODEProblem.
+    # Hopefully this gets fixed, so that I can use the dictionary directly again.
+    parr = [pdict[:dx], pdict[:x]]
+    w0 = fill(40.0, pdict[:nb_boxes])
+    #w0 = [40.0 + 10*cos(2*pi * x / pdict[:L]) for x in pdict[:x]]
+    prob = ODEProblem(cm_DC_w_xt!, w0, tspan, parr)
+    sol = solve(prob, KenCarp4(), reltol = 1e-8, abstol = 1e-8, dtmax = 0.00001) #Vern9(),AutoTsit5(Rosenbrock23()),Tsit5(), KenCarp4(), lsoda()
     return sol
 end
+
+
+   
 
 
 

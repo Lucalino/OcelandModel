@@ -12,9 +12,9 @@ include(srcdir("figure_labels.jl"))
 
 
 dcm      = CSV.read(datadir("closed model/cm_tau_fixedpoints_100000_runs_all_quantities" * ".csv"), DataFrame)
-dcm_mi   = CSV.read(datadir("mutual information/cm_rel_mi_100000_runs" * ".csv"), DataFrame)
+dcm_mi   = CSV.read(datadir("mutual information/cm_rel_mi_100000_runs_10bins_rev" * ".csv"), DataFrame)
 dom      = CSV.read(datadir("open model/om_sym_fixedpoints_100000_runs_all_quantities" * ".csv"), DataFrame)
-
+dcmlin   = CSV.read(datadir("closed model/cm_linear_rev_all_quantities" * ".csv"), DataFrame)
 
 function fig_two(data::DataFrame = dcm)
     l = full_labels_dict()
@@ -25,12 +25,17 @@ function fig_two(data::DataFrame = dcm)
     data.sresc = (data.s .- data.spwp) ./ (data.sfc .- data.spwp)
 
     f1 = Figure(resolution = (1100, 400))
+   
     ax1 = Axis(f1[1, 1], xlabel = l["s"], ylabel = L"\mathrm{Probability}\, \, \mathrm{density}\, \, \mathrm{function}", ylabelsize = lfs, xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    #text!(2.8, 0.02, text = "a)", align = (:left, :top)) 
     ax2 = Axis(f1[1,2], xlabel = L"\tilde{s} = \frac{s - s_\mathrm{pwp}}{s_\mathrm{sfc}-s_\mathrm{pwp}}", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
-    ax3 = Axis(f1[1, 3], xlabel = L"Mean water vapor pass $w$", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    #text!(-1.2, 5.5, text = "b)", align = (:left, :top))  
+    ax3 = Axis(f1[1, 3], xlabel = L"Mean water vapor pass $w$ [mm]", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    #text!(30.8, 0.15, text = "c)", align = (:left, :top))  
     ax4 = Axis(f1[1,4], xlabel = L"Precipitation ratio $\chi$", xlabelsize = lfs, xgridvisible = false, ygridvisible = false)
+    #text!(0.05, 23.0, text = "d)", align = (:left, :top))  
 
-    lines!(ax1, kde(data[!,"s"]), color = c1, linewidth = lw)    
+    lines!(ax1, kde(data[!,"s"]), color = c1, linewidth = lw)  
     lines!(ax2, kde(data[!,"sresc"]), color = c1, linewidth = lw)
     vlines!(ax2, 0.0, linewidth = 2.0, linestyle = :dash, color = c2)
     vlines!(ax2, 1.0, linewidth = 2.0, linestyle = :dash, color = c2)    
@@ -38,12 +43,12 @@ function fig_two(data::DataFrame = dcm)
     lines!(ax3, kde(data[!,"wl"]), color = c1, linestyle = :dot, linewidth = lw, label = L"\mathrm{land}")
     lines!(ax4, kde(data[!,"PR"]), color = c1, linewidth = lw)
 
-    axislegend(ax3, position = :lt, framevisible = false, labelsize = 20)
+    axislegend(ax3, position = :lc, framevisible = false, labelsize = 20)
     hidespines!(ax1, :t, :r)
     hidespines!(ax2, :t, :r)
     hidespines!(ax3, :t, :r)
     hidespines!(ax4, :t, :r)
-    xlims!(ax3, (0,60))
+    xlims!(ax3, (30,55))
     xlims!(ax1, (-0.02, 0.82))
     colsize!(f1.layout, 1, Relative(5/24))
     colsize!(f1.layout, 2, Relative(5/24))
@@ -83,8 +88,8 @@ function fig_four(rel_mi_data::DataFrame = dcm_mi)
     xrange = collect(1:1:n)  
 
     f = Figure(resolution = (600, 450))
-    ax = Axis(f[1,1], yscale = log10, xlabel = L"Model parameters $p_i$", ylabel = L"Mutual information index $I_{MI}\, (p_i\, ,\chi)$", xlabelsize = 20, ylabelsize = 20, xgridcolor = :white, ygridcolor = :white)
-    ylims!(ax, 0.1, 500.0) # separate
+    ax = Axis(f[1,1], yscale = log10, xlabel = L"Model parameters $p_i$", ylabel = L"Mutual information index $I_{MI}\, (\chi,\, p_i)$", xlabelsize = 20, ylabelsize = 20, xgridcolor = :white, ygridcolor = :white)
+    ylims!(ax, 0.1, 1000.0) # separate
     hlines!(ax, 1.0, linestyle = :dash, color = :grey35, label = "3σ significance threshold")
     scatter!(ax, xrange, rel_mi_data[:, "MI_rel"], marker = '*', markersize = 25, color = :grey20)
     ax.xticks = (1:1:n, rel_mi_data[:,"pnames"])
@@ -95,6 +100,7 @@ function fig_four(rel_mi_data::DataFrame = dcm_mi)
 end
 
 function fig_five(data::DataFrame = dcm, yquant::String = "PR", xquant1::String = "τ", xquant2::String = "α", xquant3::String = "spwp", xquant4::String = "r")
+    data = sort!(data, "nZr") #sort by weakest parameter so that we hopefully don't capture structural biases in the order in which scatter points are plotted
     l = labels_dict()
     lfs = 20
     ms = 5
@@ -102,30 +108,33 @@ function fig_five(data::DataFrame = dcm, yquant::String = "PR", xquant1::String 
     c1 = (:grey35, 0.5)
     c2 = :lightgrey
     gc = :white
-    cm = cgrad(:speed,7;categorical=true,alpha = 0.3)
+    cm = cgrad(:speed,7;categorical=true,alpha = 0.5)
 
     fig = Figure(resolution = (800, 650))
     ax1 = Axis(fig[1, 1], xlabel = l[xquant1], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
     ax2 = Axis(fig[1, 2], xlabel = l[xquant2], xlabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
     ax3 = Axis(fig[2, 1], xlabel = l[xquant3], ylabel = l[yquant], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc) 
     ax4 = Axis(fig[2, 2], xlabel = l[xquant4], xlabelsize = lfs, ylabelsize = lfs, xgridcolor = gc, ygridcolor = gc)
-        
-    scatter!(ax1, data[!,xquant1], data[!,yquant], markersize = ms, color = data[!,"s"], colormap = cm)#c1)#data[!,"s"], colormap = cm)
+     
+    scatter!(ax1, data[!,xquant1], data[!,yquant], markersize = ms, color = c1)
+    #scatter!(ax1, data[!,xquant1], data[!,yquant], markersize = ms, color = data[!,"s"], colormap = cm)
     #scatter!(ax1, reverse(sort(data,"s")[!,xquant1]), reverse(sort(data,"s")[!,yquant]), markersize = ms, color = reverse(mean_of_bins!(data, "s", "s", 10)), colormap = cm)#data[!,"s"], colormap = cm)
     lines!(ax1, sort(data, xquant1)[!,xquant1], mean_of_bins!(data, xquant1, yquant, nb_bins), color = c2)
-    scatter!(ax2, data[!,xquant2], data[!,yquant], markersize = ms, color = c1)#data[!,"s"], colormap = cm)
+    scatter!(ax2, data[!,xquant2], data[!,yquant], markersize = ms, color = c1)
+    #scatter!(ax2, data[!,xquant2], data[!,yquant], markersize = ms, color = data[!,"s"], colormap = cm)
     lines!(ax2, sort(data, xquant2)[!,xquant2], mean_of_bins!(data, xquant2, yquant, nb_bins), color = c2)
-#    scatter!(ax3, data[!,xquant3], data[!,yquant], markersize = ms, color = c1)#data[!,"s"], colormap = cm)
-    scatter!(ax3, reverse(sort(data,"s")[!,xquant3]), reverse(sort(data,"s")[!,yquant]), markersize = ms, color = mean_of_bins!(data, "s", "s", 10), colormap = cm)#data[!,"s"], colormap = cm)
-
+    scatter!(ax3, data[!,xquant3], data[!,yquant], markersize = ms, color = c1)
+    #scatter!(ax3, data[!,xquant3], data[!,yquant], markersize = ms, color = data[!,"s"], colormap = cm)
+    #scatter!(ax3, reverse(sort(data,"s")[!,xquant3]), reverse(sort(data,"s")[!,yquant]), markersize = ms, color = mean_of_bins!(data, "s", "s", 10), colormap = cm)#data[!,"s"], colormap = cm)
     lines!(ax3, sort(data, xquant3)[!,xquant3], mean_of_bins!(data, xquant3, yquant, nb_bins), color = c2)
-    scatter!(ax4, data[!,xquant4], data[!,yquant], markersize = ms, color = c1)#data[!,"s"], colormap = cm)
+    scatter!(ax4, data[!,xquant4], data[!,yquant], markersize = ms, color = c1)
+    #scatter!(ax4, data[!,xquant4], data[!,yquant], markersize = ms, color = data[!,"s"], colormap = cm)
     lines!(ax4, sort(data, xquant4)[!,xquant4], mean_of_bins!(data, xquant4, yquant, nb_bins), color = c2)
     hidespines!(ax1, :t, :r)
     hidespines!(ax2, :t, :r)
     hidespines!(ax3, :t, :r)
     hidespines!(ax4, :t, :r)
-    Colorbar(fig[1:2,3], label = "Soil moisture saturation", colormap = cm)
+    #Colorbar(fig[1:2,3], label = "Soil moisture saturation", colormap = cm)
 
     return fig
 end

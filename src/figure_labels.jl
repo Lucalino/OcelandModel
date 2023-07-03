@@ -72,7 +72,7 @@ function labels_dict()
         "Po"   => L"$P_\mathrm{o}$ [mm/day]",
         "El"   => L"$E_\ell$ [mm/day]",
         "R"    => L"$R$ [mm/day]",
-        "PR"   => L"$\chi$",
+        "χ"    => L"$\chi$",
         "Φ"    => L"Infiltration $\Phi$",
         "Ptot" => L"$P_\mathrm{mean}$ [mm/day]",
         "A"    => L"$A_\ell$ [mm/day]",
